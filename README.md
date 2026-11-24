@@ -2,6 +2,23 @@
 
 Plateforme web et mobile (PWA) de paiement et de gestion des inscriptions universitaires au Sénégal (frais de 25 000 FCFA, reçu numérique, QR code, scan par un agent, rendez-vous, tableau de bord administrateur et module IA).
 
+## Aperçu de la plateforme
+
+### Page d'accueil & Connexion
+| Accueil | Connexion |
+| --- | --- |
+| ![Page d'accueil](docs/screenshots/home.png) | ![Page de connexion](docs/screenshots/login.png) |
+
+### Espace Étudiant (Tableau de bord & Reçu QR)
+| Tableau de bord étudiant | Reçu numérique & QR Code |
+| --- | --- |
+| ![Tableau de bord étudiant](docs/screenshots/student-dashboard.png) | ![Reçu numérique et QR code](docs/screenshots/student-receipt.png) |
+
+### Espace Agent & Administration
+| Scan QR Agent | Tableau de bord Administrateur |
+| --- | --- |
+| ![Scan QR Agent](docs/screenshots/agent-scan.png) | ![Tableau de bord administrateur](docs/screenshots/admin-dashboard.png) |
+
 ## Prérequis
 
 - **Node.js** >= 20
