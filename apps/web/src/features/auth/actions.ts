@@ -1,6 +1,7 @@
 "use server";
 
 import { ROLE_DEFAULT_ROUTES, ROLES } from "@smartinscription/shared";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -100,31 +101,76 @@ export async function registerAction(
 
   const { email, password, nom, prenom, telephone } = parsed.data;
   const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        nom,
-        prenom,
-        role: ROLES.STUDENT,
+  let createdUserId: string | null = null;
+  let hasSession = false;
+
+  // En local / sans validation e-mail : crée l'utilisateur déjà confirmé via la clé service role
+  if (supabaseUrl && serviceRoleKey) {
+    const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: adminData, error: adminError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          nom,
+          prenom,
+          role: ROLES.STUDENT,
+        },
+      });
+
+    if (adminError || !adminData.user) {
+      return {
+        error:
+          adminError?.message ??
+          "Impossible de créer le compte. Vérifiez si cet e-mail n'est pas déjà utilisé.",
+      };
+    }
+
+    createdUserId = adminData.user.id;
+
+    // Connecte immédiatement l'utilisateur pour poser le cookie de session
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({ email, password });
+
+    if (!signInError && signInData.session) {
+      hasSession = true;
+    }
+  } else {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nom,
+          prenom,
+          role: ROLES.STUDENT,
+        },
       },
-    },
-  });
+    });
 
-  if (error || !data.user) {
-    return {
-      error: error?.message ?? "Impossible de créer le compte. Veuillez réessayer.",
-    };
+    if (error || !data.user) {
+      return {
+        error: error?.message ?? "Impossible de créer le compte. Veuillez réessayer.",
+      };
+    }
+
+    createdUserId = data.user.id;
+    hasSession = Boolean(data.session);
   }
 
   // Force toujours le rôle STUDENT lors d'une inscription publique
   await prisma.user.upsert({
-    where: { id: data.user.id },
+    where: { id: createdUserId },
     update: { email, nom, prenom, telephone: telephone || null },
     create: {
-      id: data.user.id,
+      id: createdUserId,
       email,
       nom,
       prenom,
@@ -133,7 +179,7 @@ export async function registerAction(
     },
   });
 
-  if (!data.session) {
+  if (!hasSession) {
     return {
       success:
         "Compte créé ! Vérifiez votre boîte e-mail pour confirmer votre adresse avant de vous connecter.",
