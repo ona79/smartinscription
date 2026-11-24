@@ -175,7 +175,7 @@ async function main() {
     });
 
     if (spec.role === Role.STUDENT && firstUfrId && firstFiliereId) {
-      await prisma.student.upsert({
+      const student = await prisma.student.upsert({
         where: { userId: user.id },
         update: {},
         create: {
@@ -183,7 +183,37 @@ async function main() {
           numeroEtudiant: "SN-2026-0001",
           ufrId: firstUfrId,
           filiereId: firstFiliereId,
-          niveau: "Licence 1",
+          niveau: "L1",
+        },
+      });
+
+      const registration = await prisma.registration.upsert({
+        where: {
+          studentId_anneeAcademique: {
+            studentId: student.id,
+            anneeAcademique: "2026-2027",
+          },
+        },
+        update: {},
+        create: {
+          studentId: student.id,
+          anneeAcademique: "2026-2027",
+          statut: "PAID",
+        },
+      });
+
+      await prisma.payment.upsert({
+        where: { providerRef: "SEED-PAY-2026-0001" },
+        update: {},
+        create: {
+          registrationId: registration.id,
+          montant: 25000,
+          moyen: "WAVE",
+          statut: "SUCCESS",
+          providerRef: "SEED-PAY-2026-0001",
+          paidAt: new Date(),
+          receiptNumber: "REC-2026-000001",
+          qrToken: "seed_demo_qr_token_smartinscription_2026_valid_32bytes",
         },
       });
     }

@@ -14,6 +14,7 @@
     "start": "pnpm --filter @smartinscription/web start",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm --filter @smartinscription/web test",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,yaml,yml}\"",
     "db:generate": "pnpm --filter @smartinscription/web db:generate",

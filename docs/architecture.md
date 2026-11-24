@@ -41,3 +41,20 @@ SmartInscription IA est structurée en **monorepo pnpm** regroupant :
 ### 2.4 Microservice IA (`services/ia`)
 - Isolé dans un service FastAPI conteneurisé (`Dockerfile` + `docker-compose.yml`) pour découpler les dépendances Python/ML de l'application Node.js.
 - Expose uniquement `GET /health` en Phase 0.
+
+## 3. Flux de paiement, reçu numérique et scan QR (Phase 1)
+
+1. **Dossier & machine à états** (`packages/shared/src/state-machine.ts`) :
+   - Toutes les transitions de `Registration.statut` passent par `canTransition(from, to)` :
+     `DRAFT → PENDING_PAYMENT → PAID → (DOCS_INCOMPLETE | DOCS_COMPLETE) → VALIDATED | REJECTED`.
+2. **Initialisation du paiement** (`apps/web/src/features/paiement/`) :
+   - Le montant (`25 000 FCFA`) est toujours fixé côté serveur (`REGISTRATION_FEE_FCFA`).
+   - L'interface `PaymentProvider` abstrait `MockProvider` (simulateur local) et `PayTechProvider` (API PayTech Sénégal).
+   - Un paiement `PENDING` est créé avec un `providerRef` unique, puis l'utilisateur est redirigé vers `checkoutUrl`.
+3. **Webhook idempotent & reçu PDF** (`/api/paiement/webhook`) :
+   - Vérification cryptographique de la signature (HMAC pour Mock, SHA-256 pour PayTech).
+   - Dans une transaction Prisma unique : passage de `Payment` à `SUCCESS`, transition de `Registration` à `PAID`, génération du `qrToken` (32 octets `base64url`) et du `receiptNumber` séquentiel (`receipt_number_seq`).
+   - Le reçu PDF est généré côté serveur (`pdf-lib`) et déposé dans le bucket privé Supabase Storage `receipts`, accessible uniquement via URL signée courte durée (`/api/recu/[paymentId]/pdf`).
+4. **Vérification agent** (`/agent/scan` et `/verification/[qrToken]`) :
+   - Protégée par `requireRole([AGENT, ADMIN])` et limitée en débit par utilisateur.
+   - Le QR code encode uniquement l'URL `/verification/<qrToken>` (aucune donnée personnelle).

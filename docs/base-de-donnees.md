@@ -12,7 +12,7 @@ Le schéma se trouve dans `apps/web/prisma/schema.prisma`.
 | `UFR` | Unité de Formation et de Recherche | `code` unique |
 | `Filiere` | Filière rattachée à une UFR | `ufrId` -> `UFR.id` |
 | `Registration` | Dossier d'inscription pour une année académique | `studentId`, `academicYear`, `status` (enum `RegistrationStatus`), index sur `(studentId, academicYear)` |
-| `Payment` | Paiement des frais d'inscription (défaut `25000` FCFA) | `providerRef` unique, `qrToken` unique, `method` (`ORANGE_MONEY`, `WAVE`, `FREE_MONEY`, `WIZALL`, `CARD`), `status` (`PENDING`, `SUCCESS`, `FAILED`) |
+| `Payment` | Paiement des frais d'inscription (défaut `25000` FCFA) | `providerRef` unique, `receiptNumber` unique (`REC-YYYY-000123`), `qrToken` unique, `method` (`ORANGE_MONEY`, `WAVE`, `FREE_MONEY`, `WIZALL`, `CARD`), `status` (`PENDING`, `SUCCESS`, `FAILED`) |
 | `Document` | Pièce justificative déposée par l'étudiant | `type` (`ID_CARD`, `TRANSCRIPT`, `DIPLOMA`, `PHOTO`), `verificationStatus`, `rejectionReason` |
 | `Appointment` | Rendez-vous physique de validation | `studentId`, `startsAt`, `endsAt`, `status` |
 | `Notification` | Notification destinée à un utilisateur | `userId`, `type`, `message`, `read`, `createdAt` |
