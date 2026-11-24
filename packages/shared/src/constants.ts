@@ -1,5 +1,18 @@
 export const REGISTRATION_FEE_FCFA = 25000;
 
+export const CURRENT_ACADEMIC_YEAR = "2026-2027";
+
+export const ACADEMIC_LEVELS = ["L1", "L2", "L3", "M1", "M2"] as const;
+export type AcademicLevel = (typeof ACADEMIC_LEVELS)[number];
+
+export const ACADEMIC_LEVEL_LABELS_FR: Record<AcademicLevel, string> = {
+  L1: "Licence 1 (L1)",
+  L2: "Licence 2 (L2)",
+  L3: "Licence 3 (L3)",
+  M1: "Master 1 (M1)",
+  M2: "Master 2 (M2)",
+};
+
 export const ROLES = {
   STUDENT: "STUDENT",
   AGENT: "AGENT",
