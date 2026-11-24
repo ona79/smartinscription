@@ -94,39 +94,41 @@ export function TestAccountsHelper({ onSelectAccount }: TestAccountsHelperProps)
               )}
             </form>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <p className="text-xs font-semibold text-foreground">
-                Cliquez sur « Remplir » pour pré-remplir le formulaire :
+                Cliquez sur un compte pour pré-remplir :
               </p>
-              <ul className="divide-y divide-border/70">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {accounts.map((acc) => (
-                  <li
+                  <div
                     key={acc.email}
-                    className="flex items-center justify-between gap-2 py-2 text-xs"
+                    className="flex flex-col justify-between gap-2 rounded-xl border border-border/80 bg-surface p-2.5 text-xs"
                   >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-1.5">
                         <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
                           {acc.roleLabel}
                         </Badge>
-                        <span className="truncate font-mono text-foreground">{acc.email}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onSelectAccount(acc.email, acc.password)}
+                          className="h-6 shrink-0 rounded-lg px-2 text-[11px]"
+                        >
+                          Remplir
+                        </Button>
                       </div>
-                      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-                        Mdp : {acc.password}
+                      <p className="truncate font-mono text-[11px] text-foreground">
+                        {acc.email}
+                      </p>
+                      <p className="truncate font-mono text-[10px] text-muted-foreground">
+                        {acc.password}
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onSelectAccount(acc.email, acc.password)}
-                      className="h-7 shrink-0 rounded-lg px-2.5 text-[11px]"
-                    >
-                      Remplir
-                    </Button>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
         </div>
