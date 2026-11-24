@@ -16,11 +16,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { requireRole } from "@/features/auth/lib/session";
 import { RegistrationStepper } from "@/features/dossier/components/registration-stepper";
 import { getStudentDashboardData } from "@/features/dossier/queries";
+import { NotificationList } from "@/features/notifications/components/notification-list";
+import { getUserNotifications } from "@/features/notifications/services/notification-service";
 import { cn } from "@/lib/utils";
 
 export default async function StudentDashboardPage() {
   const user = await requireRole([ROLES.STUDENT]);
-  const { student, registration } = await getStudentDashboardData(user.id);
+  const [{ student, registration }, notifications] = await Promise.all([
+    getStudentDashboardData(user.id),
+    getUserNotifications(user.id, 6),
+  ]);
 
   // Redirige vers la complétion du profil si l'étudiant n'en a pas encore
   if (!student || !registration) {
@@ -124,6 +129,8 @@ export default async function StudentDashboardPage() {
           </Link>
         </CardContent>
       </Card>
+
+      <NotificationList notifications={notifications} />
     </div>
   );
 }
