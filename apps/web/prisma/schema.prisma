@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  AGENT
+  ADMIN
+}
+
+enum RegistrationStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  DOCS_INCOMPLETE
+  DOCS_COMPLETE
+  VALIDATED
+  REJECTED
+}
+
+enum PaymentMethod {
+  ORANGE_MONEY
+  WAVE
+  FREE_MONEY
+  WIZALL
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum DocumentType {
+  ID_CARD
+  TRANSCRIPT
+  DIPLOMA
+  PHOTO
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  nom       String
+  prenom    String
+  telephone String?
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student       Student?
+  notifications Notification[]
+
+  @@index([role])
+}
+
+model UFR {
+  id   String @id @default(cuid())
+  nom  String
+  code String @unique
+
+  filieres Filiere[]
+  students Student[]
+}
+
+model Filiere {
+  id    String @id @default(cuid())
+  nom   String
+  ufrId String
+
+  ufr      UFR       @relation(fields: [ufrId], references: [id], onDelete: Cascade)
+  students Student[]
+
+  @@index([ufrId])
+}
+
+model Student {
+  id             String @id @default(cuid())
+  userId         String @unique @db.Uuid
+  numeroEtudiant String @unique
+  ufrId          String
+  filiereId      String
+  niveau         String
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ufr           UFR            @relation(fields: [ufrId], references: [id])
+  filiere       Filiere        @relation(fields: [filiereId], references: [id])
+  registrations Registration[]
+  appointments  Appointment[]
+
+  @@index([ufrId])
+  @@index([filiereId])
+}
+
+model Registration {
+  id              String             @id @default(cuid())
+  studentId       String
+  anneeAcademique String
+  statut          RegistrationStatus @default(DRAFT)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments    Payment[]
+  documents   Document[]
+  fraudAlerts FraudAlert[]
+
+  @@unique([studentId, anneeAcademique])
+  @@index([statut])
+  @@index([anneeAcademique])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  registrationId String
+  montant        Int           @default(25000)
+  moyen          PaymentMethod
+  statut         PaymentStatus @default(PENDING)
+  providerRef    String        @unique
+  paidAt         DateTime?
+  receiptUrl     String?
+  qrToken        String?       @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  fraudAlerts  FraudAlert[]
+
+  @@index([registrationId])
+  @@index([statut])
+}
+
+model Document {
+  id                 String         @id @default(cuid())
+  registrationId     String
+  type               DocumentType
+  url                String
+  verificationStatus DocumentStatus @default(PENDING)
+  motif              String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([registrationId])
+  @@index([verificationStatus])
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  studentId String
+  debut     DateTime
+  fin       DateTime
+  statut    AppointmentStatus @default(SCHEDULED)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([debut])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @db.Uuid
+  type      String
+  message   String
+  lu        Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lu])
+  @@index([createdAt])
+}
+
+model FraudAlert {
+  id             String   @id @default(cuid())
+  paymentId      String?
+  registrationId String?
+  type           String
+  score          Float
+  resolu         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  payment      Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  registration Registration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+
+  @@index([paymentId])
+  @@index([registrationId])
+  @@index([resolu])
+}
+
+model Prediction {
+  id        String   @id @default(cuid())
+  type      String
+  dateCible DateTime
+  valeur    Float
+  createdAt DateTime @default(now())
+
+  @@index([type, dateCible])
+}

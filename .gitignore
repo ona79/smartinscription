@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.pnpm-store/
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+apps/web/build/
+
+# PWA generated service worker
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/swe-worker-*.js
+
+# Shared package build output
+packages/shared/dist/
+
+# Prisma generated client
+apps/web/src/generated/prisma/
+
+# Python / FastAPI
+services/ia/__pycache__/
+services/ia/.venv/
+services/ia/venv/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs & OS
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts

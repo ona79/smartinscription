@@ -1,0 +1,28 @@
+{
+  "name": "smartinscription",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SmartInscription IA - Plateforme de paiement et de gestion des inscriptions universitaires au Sénégal",
+  "packageManager": "pnpm@12.23.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @smartinscription/web dev",
+    "build": "pnpm --filter @smartinscription/shared build && pnpm --filter @smartinscription/web build",
+    "start": "pnpm --filter @smartinscription/web start",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,yaml,yml}\"",
+    "db:generate": "pnpm --filter @smartinscription/web db:generate",
+    "db:migrate": "pnpm --filter @smartinscription/web db:migrate",
+    "db:seed": "pnpm --filter @smartinscription/web db:seed",
+    "db:studio": "pnpm --filter @smartinscription/web db:studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.11"
+  }
+}
