@@ -9,6 +9,11 @@ import {
 } from "@smartinscription/shared";
 import { getPaymentProvider } from "@/features/paiement/providers";
 import type { VerifiedWebhookResult } from "@/features/paiement/providers/types";
+import {
+  formatReceiptNumber,
+  generateQrToken,
+} from "@/features/recu/services/receipt-service";
+import { generateAndStoreReceiptPdf } from "@/features/recu/services/storage-service";
 import { prisma } from "@/lib/prisma";
 
 function generateProviderRef(): string {
@@ -57,7 +62,7 @@ export async function initiateStudentPayment(params: {
     throw new Error("Les frais d'inscription ont déjà été réglés pour cette année.");
   }
 
-  // Idempotence anti-double-clic : réutilise un paiement PENDING récent pour le même moyen
+  // Idempotence anti-double-clic : réutilise un paiement PENDING existant pour le même moyen
   const existingPending = registration.payments.find(
     (p) => p.statut === PAYMENT_STATUSES.PENDING && p.moyen === params.moyen
   );
@@ -65,7 +70,7 @@ export async function initiateStudentPayment(params: {
   const provider = getPaymentProvider();
 
   if (existingPending) {
-    const checkout = await provider.createCheckout({
+    return provider.createCheckout({
       paymentId: existingPending.id,
       providerRef: existingPending.providerRef,
       montant: existingPending.montant,
@@ -73,7 +78,6 @@ export async function initiateStudentPayment(params: {
       studentEmail: user.email,
       studentName: `${user.prenom} ${user.nom}`,
     });
-    return checkout;
   }
 
   const providerRef = generateProviderRef();
@@ -118,14 +122,17 @@ export interface ProcessWebhookOutcome {
   alreadyProcessed: boolean;
   paymentId: string;
   statut: string;
+  receiptNumber?: string | null;
+  qrToken?: string | null;
 }
 
 /**
- * Traite une notification webhook déjà vérifiée de manière strictement idempotente.
+ * Traite une notification webhook vérifiée de manière strictement idempotente.
+ * Génère le qrToken et le numéro de reçu dans la même transaction que SUCCESS.
  */
 export async function processVerifiedWebhook(
   webhookResult: VerifiedWebhookResult,
-  deps: { db?: typeof prisma } = {}
+  deps: { db?: typeof prisma; skipPdfUpload?: boolean } = {}
 ): Promise<ProcessWebhookOutcome> {
   const db = deps.db ?? prisma;
 
@@ -147,12 +154,13 @@ export async function processVerifiedWebhook(
       alreadyProcessed: true,
       paymentId: payment.id,
       statut: payment.statut,
+      receiptNumber: payment.receiptNumber,
+      qrToken: payment.qrToken,
     };
   }
 
   if (webhookResult.outcome === "SUCCESS") {
     const updated = await db.$transaction(async (tx) => {
-      // Vérifie qu'aucun autre paiement SUCCESS n'existe sur cette inscription
       const existingSuccess = await tx.payment.findFirst({
         where: {
           registrationId: payment.registrationId,
@@ -164,11 +172,20 @@ export async function processVerifiedWebhook(
         return existingSuccess;
       }
 
+      const seqRows = await tx.$queryRaw<{ seq: bigint }[]>`
+        SELECT nextval('receipt_number_seq')::bigint AS seq
+      `;
+      const seqValue = seqRows[0]?.seq ?? BigInt(1);
+      const receiptNumber = formatReceiptNumber(seqValue);
+      const qrToken = generateQrToken();
+
       const updatedPayment = await tx.payment.update({
         where: { id: payment.id },
         data: {
           statut: PAYMENT_STATUSES.SUCCESS,
           paidAt: new Date(),
+          receiptNumber,
+          qrToken,
         },
       });
 
@@ -187,14 +204,22 @@ export async function processVerifiedWebhook(
       return updatedPayment;
     });
 
+    if (!deps.skipPdfUpload) {
+      await generateAndStoreReceiptPdf(updated.id).catch((err) => {
+        console.warn("[recu] Génération/upload PDF différé:", err);
+      });
+    }
+
     console.info(
-      `[paiement] Paiement confirmé SUCCESS id=${updated.id} ref=${updated.providerRef}`
+      `[paiement] Paiement confirmé SUCCESS id=${updated.id} ref=${updated.providerRef} recu=${updated.receiptNumber}`
     );
 
     return {
       alreadyProcessed: false,
       paymentId: updated.id,
       statut: updated.statut,
+      receiptNumber: updated.receiptNumber,
+      qrToken: updated.qrToken,
     };
   }
 

@@ -137,6 +137,7 @@ model Payment {
   statut         PaymentStatus @default(PENDING)
   providerRef    String        @unique
   paidAt         DateTime?
+  receiptNumber  String?       @unique
   receiptUrl     String?
   qrToken        String?       @unique
   createdAt      DateTime      @default(now())
