@@ -1,5 +1,5 @@
 import { ROLES } from "@smartinscription/shared";
-import { CheckCircle2, ShieldAlert } from "lucide-react";
+import { CheckCircle2, ShieldAlert, Sparkles } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
 import { resolveFraudAlertAction } from "@/features/admin/actions";
 import { getAdminFraudAlerts } from "@/features/admin/queries";
 import { requireRole } from "@/features/auth/lib/session";
+import { runIaAnomalyScanAction } from "@/features/ia/actions";
 
 export default async function AdminFraudAlertsPage() {
   await requireRole([ROLES.ADMIN]);
@@ -26,6 +27,17 @@ export default async function AdminFraudAlertsPage() {
       <PageHeader
         title="Alertes fraude"
         description="Surveillance des anomalies de paiement et de dossiers suspects."
+        actions={
+          <form action={runIaAnomalyScanAction}>
+            <Button
+              type="submit"
+              className="h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Lancer l&apos;analyse IA
+            </Button>
+          </form>
+        }
       />
 
       {alerts.length === 0 ? (

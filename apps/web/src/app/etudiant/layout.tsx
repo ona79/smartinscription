@@ -1,6 +1,7 @@
 import { ROLE_LABELS_FR, ROLES } from "@smartinscription/shared";
 import { PortalShell, type PortalNavItem } from "@/components/layout/portal-shell";
 import { requireRole } from "@/features/auth/lib/session";
+import { FaqChatbotWidget } from "@/features/ia/components/faq-chatbot-widget";
 
 const STUDENT_NAV_ITEMS: PortalNavItem[] = [
   { href: "/etudiant", label: "Tableau de bord", shortLabel: "Accueil", icon: "dashboard" },
@@ -22,6 +23,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
       navItems={STUDENT_NAV_ITEMS}
     >
       {children}
+      <FaqChatbotWidget />
     </PortalShell>
   );
 }
