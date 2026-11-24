@@ -21,6 +21,11 @@ export interface ReceiptPdfInput {
   anneeAcademique: string;
 }
 
+/** Remplace les espaces insécables (U+202F, U+00A0) par des espaces ASCII pour WinAnsi. */
+function toWinAnsiSafe(text: string): string {
+  return text.replace(/[\u202f\u00a0]/g, " ");
+}
+
 /** Génère le reçu officiel au format PDF côté serveur avec QR code intégré. */
 export async function generateReceiptPdfBuffer(
   input: ReceiptPdfInput
@@ -74,7 +79,7 @@ export async function generateReceiptPdfBuffer(
     borderWidth: 1,
   });
 
-  page.drawText(`Reçu N° : ${input.receiptNumber}`, {
+  page.drawText(toWinAnsiSafe(`Reçu N° : ${input.receiptNumber}`), {
     x: 64,
     y: height - 156,
     size: 13,
@@ -82,10 +87,12 @@ export async function generateReceiptPdfBuffer(
     color: brandColor,
   });
 
-  const formattedDate = input.paidAt.toLocaleString("fr-FR", {
-    dateStyle: "long",
-    timeStyle: "short",
-  });
+  const formattedDate = toWinAnsiSafe(
+    input.paidAt.toLocaleString("fr-FR", {
+      dateStyle: "long",
+      timeStyle: "short",
+    })
+  );
   page.drawText(`Date de paiement : ${formattedDate}`, {
     x: 64,
     y: height - 174,
@@ -102,7 +109,7 @@ export async function generateReceiptPdfBuffer(
     ["UFR", input.ufrNom],
     ["Filière", input.filiereNom],
     ["Niveau", input.niveau],
-    ["Montant réglé", `${input.montant.toLocaleString("fr-FR")} FCFA`],
+    ["Montant réglé", toWinAnsiSafe(`${input.montant.toLocaleString("fr-FR")} FCFA`)],
     ["Moyen de paiement", PAYMENT_METHOD_LABELS_FR[input.moyen]],
     ["Référence transaction", input.providerRef],
     ["Statut", "PAYÉ"],
@@ -110,14 +117,14 @@ export async function generateReceiptPdfBuffer(
 
   let cursorY = height - 230;
   for (const [label, value] of rows) {
-    page.drawText(label, {
+    page.drawText(toWinAnsiSafe(label), {
       x: 48,
       y: cursorY,
       size: 10,
       font: fontRegular,
       color: mutedText,
     });
-    page.drawText(value, {
+    page.drawText(toWinAnsiSafe(value), {
       x: 220,
       y: cursorY,
       size: 11,
