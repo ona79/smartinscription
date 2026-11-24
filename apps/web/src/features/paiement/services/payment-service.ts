@@ -9,6 +9,7 @@ import {
 } from "@smartinscription/shared";
 import { getPaymentProvider } from "@/features/paiement/providers";
 import type { VerifiedWebhookResult } from "@/features/paiement/providers/types";
+import { notifyUser } from "@/features/notifications/services/notification-service";
 import {
   formatReceiptNumber,
   generateQrToken,
@@ -208,6 +209,21 @@ export async function processVerifiedWebhook(
       await generateAndStoreReceiptPdf(updated.id).catch((err) => {
         console.warn("[recu] Génération/upload PDF différé:", err);
       });
+
+      const owner = await db.student.findUnique({
+        where: { id: payment.registration.studentId },
+        include: { user: true },
+      });
+      if (owner?.user) {
+        await notifyUser({
+          userId: owner.user.id,
+          email: owner.user.email,
+          type: "PAYMENT_SUCCESS",
+          message: `Votre paiement de ${REGISTRATION_FEE_FCFA.toLocaleString("fr-FR")} FCFA est confirmé (Reçu ${updated.receiptNumber}).`,
+          emailSubject: `Confirmation de paiement — Reçu ${updated.receiptNumber}`,
+          emailHtml: `<p>Bonjour ${owner.user.prenom},</p><p>Votre paiement de <strong>25 000 FCFA</strong> a été confirmé. Votre reçu <strong>${updated.receiptNumber}</strong> est disponible dans votre espace étudiant.</p>`,
+        });
+      }
     }
 
     console.info(
