@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PREFIXES: { prefix: string; allowedRoles: Role[] }[] = [
   { prefix: "/etudiant", allowedRoles: [ROLES.STUDENT] },
   { prefix: "/agent", allowedRoles: [ROLES.AGENT, ROLES.ADMIN] },
+  { prefix: "/verification", allowedRoles: [ROLES.AGENT, ROLES.ADMIN] },
   { prefix: "/admin", allowedRoles: [ROLES.ADMIN] },
 ];
 
