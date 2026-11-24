@@ -1,6 +1,7 @@
 import { Construction } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface PlaceholderPageProps {
   blockName: string;
@@ -9,6 +10,7 @@ interface PlaceholderPageProps {
   featureFolder: string;
 }
 
+/** Page d'attente sobre pour les modules métier à implémenter par l'équipe. */
 export function PlaceholderPage({
   blockName,
   title,
@@ -16,31 +18,37 @@ export function PlaceholderPage({
   featureFolder,
 }: PlaceholderPageProps) {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        <Badge variant="outline" className="border-amber-500/50 bg-amber-50 text-amber-800">
-          À implémenter
-        </Badge>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        title={title}
+        description={description}
+        badge={
+          <Badge
+            variant="outline"
+            className="rounded-full border-border bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+          >
+            À implémenter
+          </Badge>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
+        <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
               <Construction className="h-5 w-5" />
             </div>
-            <div>
-              <CardTitle className="text-lg">Bloc : {blockName}</CardTitle>
-              <CardDescription>À implémenter dans {featureFolder}</CardDescription>
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold text-foreground">{blockName}</h2>
+              <p className="text-sm text-muted-foreground">
+                Ce module est prêt à être développé dans le dossier dédié de la fonctionnalité.
+              </p>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>{description}</p>
-          <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs text-foreground">
-            Dossier cible : apps/web/src/features/{featureFolder}/
-          </p>
+
+          <code className="shrink-0 rounded-xl border border-border bg-muted/50 px-3 py-2 font-mono text-xs text-foreground">
+            src/features/{featureFolder}/
+          </code>
         </CardContent>
       </Card>
     </div>

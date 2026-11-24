@@ -1,79 +1,89 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { loginAction, type AuthActionState } from "@/features/auth/actions";
 
 const initialState: AuthActionState = {};
 
+/** Formulaire de connexion minimaliste avec icônes, bascule mot de passe et état de chargement. */
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl">Connexion</CardTitle>
-        <CardDescription>
-          Accédez à votre espace étudiant, agent ou administrateur.
-        </CardDescription>
-      </CardHeader>
+    <form action={formAction} className="space-y-5">
+      {state.error && (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{state.error}</span>
+        </div>
+      )}
 
-      <form action={formAction}>
-        <CardContent className="space-y-4">
-          {state.error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
-            </div>
-          )}
+      <FormField
+        id="email"
+        name="email"
+        type="email"
+        label="Adresse e-mail"
+        placeholder="etudiant@smartinscription.sn"
+        autoComplete="email"
+        required
+        icon={<Mail className="h-4 w-4" />}
+      />
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Adresse e-mail</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="etudiant@smartinscription.sn"
-              required
-              autoComplete="email"
-            />
-          </div>
+      <FormField
+        id="password"
+        name="password"
+        type={showPassword ? "text" : "password"}
+        label="Mot de passe"
+        placeholder="••••••••"
+        autoComplete="current-password"
+        required
+        icon={<Lock className="h-4 w-4" />}
+        trailing={
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={
+              showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
+            }
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        }
+      />
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-        </CardContent>
+      <Button
+        type="submit"
+        disabled={isPending}
+        className="h-11 w-full rounded-xl bg-brand text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+      >
+        {isPending ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Connexion en cours...
+          </>
+        ) : (
+          "Se connecter"
+        )}
+      </Button>
 
-        <CardFooter className="flex flex-col gap-3 pt-2">
-          <Button type="submit" className="w-full bg-teal-700 hover:bg-teal-800" disabled={isPending}>
-            {isPending ? "Connexion en cours..." : "Se connecter"}
-          </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            Pas encore de compte ?{" "}
-            <Link href="/inscription" className="font-medium text-teal-700 hover:underline">
-              Créer un compte étudiant
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+      <p className="pt-1 text-center text-sm text-muted-foreground">
+        Pas encore de compte ?{" "}
+        <Link
+          href="/inscription"
+          className="font-semibold text-brand underline-offset-4 hover:underline"
+        >
+          Créer un compte étudiant
+        </Link>
+      </p>
+    </form>
   );
 }

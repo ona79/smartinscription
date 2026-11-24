@@ -10,6 +10,7 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   transpilePackages: ["@smartinscription/shared"],
   serverExternalPackages: ["@prisma/client", "pg"],
+  turbopack: {},
 };
 
 export default withSerwist(nextConfig);
