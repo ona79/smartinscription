@@ -38,19 +38,19 @@ export default async function StudentDossierPage() {
       const ufrs = await getUfrsWithFilieres();
 
       return (
-        <div className="max-w-2xl space-y-5">
+        <div className="max-w-lg space-y-3">
           <PageHeader
             title="Compléter mon dossier étudiant"
-            description={`Renseignez vos informations académiques et d'état civil pour l'année ${CURRENT_ACADEMIC_YEAR}.`}
+            description={`Année académique ${CURRENT_ACADEMIC_YEAR}`}
           />
 
           <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
-            <CardHeader className="p-5 pb-2">
-              <CardTitle className="text-base font-semibold">
+            <CardHeader className="p-4 pb-1">
+              <CardTitle className="text-sm font-semibold">
                 Informations académiques et identité
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-5 pt-2">
+            <CardContent className="p-4 pt-1">
               <ProfileCompletionForm ufrs={ufrs} />
             </CardContent>
           </Card>

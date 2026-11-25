@@ -151,13 +151,13 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-2.5">
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -169,12 +169,12 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         placeholder="Ex : SN-2026-0042"
         required
         error={fieldErrors.numeroEtudiant}
-        hint="Votre identifiant universitaire unique (lettres, chiffres et tirets)."
+        className="sm:h-9"
         icon={<Hash className="h-4 w-4" />}
       />
 
-      <div className="space-y-1.5">
-        <Label htmlFor="ufrId" className="text-[13px] font-medium text-foreground">
+      <div className="space-y-1">
+        <Label htmlFor="ufrId" className="text-xs font-medium text-foreground">
           UFR
         </Label>
         <select
@@ -183,7 +183,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           required
           value={selectedUfrId}
           onChange={(e) => setSelectedUfrId(e.target.value)}
-          className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-10 sm:text-sm"
+          className="flex h-11 w-full rounded-lg border border-input bg-surface px-2.5 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:text-sm"
         >
           <option value="" disabled>
             Sélectionnez votre UFR
@@ -196,9 +196,9 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="filiereId" className="text-[13px] font-medium text-foreground">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="filiereId" className="text-xs font-medium text-foreground">
             Filière
           </Label>
           <select
@@ -208,7 +208,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             required
             defaultValue={filieres[0]?.id ?? ""}
             disabled={filieres.length === 0}
-            className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 sm:h-10 sm:text-sm"
+            className="flex h-11 w-full rounded-lg border border-input bg-surface px-2.5 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 sm:h-9 sm:text-sm"
           >
             <option value="" disabled>
               Sélectionnez une filière
@@ -224,8 +224,8 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="niveau" className="text-[13px] font-medium text-foreground">
+        <div className="space-y-1">
+          <Label htmlFor="niveau" className="text-xs font-medium text-foreground">
             Niveau
           </Label>
           <select
@@ -233,7 +233,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             name="niveau"
             required
             defaultValue="L1"
-            className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-10 sm:text-sm"
+            className="flex h-11 w-full rounded-lg border border-input bg-surface px-2.5 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:text-sm"
           >
             {ACADEMIC_LEVELS.map((level) => (
               <option key={level} value={level}>
@@ -244,7 +244,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         <FormField
           id="birthDate"
           name="birthDate"
@@ -252,6 +252,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           label="Date de naissance"
           required
           error={fieldErrors.birthDate}
+          className="sm:h-9"
           icon={<Calendar className="h-4 w-4" />}
         />
         <FormField
@@ -261,6 +262,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           placeholder="Ex : Ziguinchor"
           required
           error={fieldErrors.birthPlace}
+          className="sm:h-9"
           icon={<MapPin className="h-4 w-4" />}
         />
         <FormField
@@ -271,16 +273,14 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           defaultValue="Sénégalaise"
           required
           error={fieldErrors.nationality}
+          className="sm:h-9"
           icon={<Globe className="h-4 w-4" />}
         />
       </div>
 
-      <div className="space-y-1.5 rounded-xl border border-border bg-muted/20 p-4">
-        <p className="text-[13px] font-medium text-foreground">
-          Photo d&apos;identité (optionnelle à cette étape)
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Visage dégagé, fond uni, cadrage portrait. Elle apparaîtra sur votre carte étudiante numérique.
+      <div className="space-y-1 rounded-lg border border-border bg-muted/20 p-2.5">
+        <p className="text-xs font-medium text-foreground">
+          Photo d&apos;identité (optionnelle)
         </p>
         <PhotoUploader
           mode="deferred"
@@ -293,7 +293,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
       <Button
         type="submit"
         disabled={isSubmitting || ufrs.length === 0}
-        className="h-10 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
+        className="w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark sm:h-9"
       >
         {isSubmitting ? (
           <>
