@@ -15,6 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AffluenceByUfrChart,
+  PaymentsByMethodChart,
+  PredictionsLineChart,
+  RegistrationsLineChart,
+} from "@/features/admin/components/admin-charts";
 import { getAdminStatistics } from "@/features/admin/queries";
 import { requireRole } from "@/features/auth/lib/session";
 import { generateIaPredictionsAction } from "@/features/ia/actions";
@@ -22,13 +28,34 @@ import { IaActionButton } from "@/features/ia/components/ia-action-button";
 
 export default async function AdminStatsPage() {
   await requireRole([ROLES.ADMIN]);
-  const { ufrs, paymentsByMethod, predictions } = await getAdminStatistics();
+  const { ufrs, paymentsByMethod, predictions, registrationsByDay } =
+    await getAdminStatistics();
+
+  const paymentChartData = paymentsByMethod.map((row) => ({
+    method: PAYMENT_METHOD_LABELS_FR[row.moyen as PaymentMethod],
+    count: row._count.id,
+  }));
+
+  const ufrChartData = ufrs.map((u) => ({
+    code: u.code,
+    students: u._count.students,
+  }));
+
+  const predictionChartData = predictions
+    .filter((p) => p.type === "AFFLUENCE_DOSSIERS" || p.type === "AFFLUENCE_JOUR" || p.type === "AFFLUENCE_HEURE")
+    .map((p) => ({
+      label:
+        p.heure !== null
+          ? `${p.dateCible.toISOString().slice(5, 10)} ${String(p.heure).padStart(2, "0")}h`
+          : p.dateCible.toISOString().slice(5, 10),
+      valeur: p.valeur,
+    }));
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Statistiques & prédictions IA"
-        description="Répartition des effectifs par UFR, encaissements par moyen de paiement et prévisions."
+        description="Répartition par UFR, paiements par moyen, courbes d'affluence et prévisions."
         actions={
           <IaActionButton
             label="Générer prévisions IA (7j)"
@@ -37,7 +64,50 @@ export default async function AdminStatsPage() {
         }
       />
 
+      {/* Graphiques Recharts */}
       <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardHeader className="p-5 pb-2">
+            <CardTitle className="text-base font-semibold">Inscriptions par jour</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 pt-0">
+            {registrationsByDay.length === 0 ? (
+              <p className="py-10 text-center text-[13px] text-muted-foreground">
+                Pas encore de données d&apos;inscription.
+              </p>
+            ) : (
+              <RegistrationsLineChart data={registrationsByDay} />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardHeader className="p-5 pb-2">
+            <CardTitle className="text-base font-semibold">Paiements par moyen</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 pt-0">
+            {paymentChartData.length === 0 ? (
+              <p className="py-10 text-center text-[13px] text-muted-foreground">
+                Aucun paiement confirmé pour le moment.
+              </p>
+            ) : (
+              <PaymentsByMethodChart data={paymentChartData} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tableaux & Graphique UFR */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardHeader className="p-5 pb-2">
+            <CardTitle className="text-base font-semibold">Affluence par UFR</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 pt-0">
+            <AffluenceByUfrChart data={ufrChartData} />
+          </CardContent>
+        </Card>
+
         <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
           <CardHeader className="p-5 pb-3">
             <CardTitle className="text-base font-semibold">Effectifs par UFR</CardTitle>
@@ -69,47 +139,10 @@ export default async function AdminStatsPage() {
             </Table>
           </CardContent>
         </Card>
-
-        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
-          <CardHeader className="p-5 pb-3">
-            <CardTitle className="text-base font-semibold">
-              Paiements réussis par moyen
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
-            {paymentsByMethod.length === 0 ? (
-              <p className="py-5 text-center text-[13px] text-muted-foreground">
-                Aucun paiement confirmé pour le moment.
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Moyen</TableHead>
-                    <TableHead className="text-right">Transactions</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paymentsByMethod.map((row) => (
-                    <TableRow key={row.moyen}>
-                      <TableCell className="font-medium">
-                        {PAYMENT_METHOD_LABELS_FR[row.moyen as PaymentMethod]}
-                      </TableCell>
-                      <TableCell className="text-right">{row._count.id}</TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {(row._sum.montant ?? 0).toLocaleString("fr-FR")} FCFA
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
-      {predictions.length === 0 ? (
+      {/* Prévisions IA */}
+      {predictionChartData.length === 0 ? (
         <EmptyState
           icon={BarChart3}
           title="Aucune prédiction IA disponible"
@@ -117,28 +150,13 @@ export default async function AdminStatsPage() {
         />
       ) : (
         <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
-          <CardHeader className="p-5 pb-3">
-            <CardTitle className="text-base font-semibold">Prédictions récentes</CardTitle>
+          <CardHeader className="p-5 pb-2">
+            <CardTitle className="text-base font-semibold">
+              Courbe des prévisions IA
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Date cible</TableHead>
-                  <TableHead className="text-right">Valeur prédite</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {predictions.map((pred) => (
-                  <TableRow key={pred.id}>
-                    <TableCell className="font-medium">{pred.type}</TableCell>
-                    <TableCell>{pred.dateCible.toLocaleDateString("fr-FR")}</TableCell>
-                    <TableCell className="text-right font-semibold">{pred.valeur}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <PredictionsLineChart data={predictionChartData} />
           </CardContent>
         </Card>
       )}

@@ -19,9 +19,19 @@ import { requireRole } from "@/features/auth/lib/session";
 import { runIaAnomalyScanAction } from "@/features/ia/actions";
 import { IaActionButton } from "@/features/ia/components/ia-action-button";
 
-export default async function AdminFraudAlertsPage() {
+interface AdminFraudAlertsPageProps {
+  searchParams: Promise<{ type?: string; sort?: string }>;
+}
+
+export default async function AdminFraudAlertsPage({
+  searchParams,
+}: AdminFraudAlertsPageProps) {
   await requireRole([ROLES.ADMIN]);
-  const alerts = await getAdminFraudAlerts();
+  const params = await searchParams;
+  const { alerts, types } = await getAdminFraudAlerts({
+    type: params.type,
+    sort: params.sort,
+  });
 
   return (
     <div className="space-y-5">
@@ -35,6 +45,47 @@ export default async function AdminFraudAlertsPage() {
           />
         }
       />
+
+      {/* Filtres & Tri */}
+      <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardContent className="p-4">
+          <form method="GET" className="flex flex-wrap items-center gap-3">
+            <select
+              name="type"
+              defaultValue={params.type ?? ""}
+              aria-label="Filtrer par type d'alerte"
+              className="h-9 rounded-lg border border-input bg-surface px-3 text-[13px]"
+            >
+              <option value="">Tous les types</option>
+              {types.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+
+            <select
+              name="sort"
+              defaultValue={params.sort ?? "recent"}
+              aria-label="Trier les alertes"
+              className="h-9 rounded-lg border border-input bg-surface px-3 text-[13px]"
+            >
+              <option value="recent">Plus récentes / Ouvertes</option>
+              <option value="score_desc">Score décroissant</option>
+              <option value="score_asc">Score croissant</option>
+            </select>
+
+            <Button
+              type="submit"
+              size="sm"
+              variant="outline"
+              className="h-9 rounded-lg px-3.5 text-[13px]"
+            >
+              Appliquer
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {alerts.length === 0 ? (
         <EmptyState
@@ -95,7 +146,7 @@ export default async function AdminFraudAlertsPage() {
                             className="h-9 rounded-lg text-[13px]"
                           >
                             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                            Marquer résolue
+                            Marquer comme résolue
                           </Button>
                         </form>
                       )}

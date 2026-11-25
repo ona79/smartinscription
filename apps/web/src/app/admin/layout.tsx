@@ -4,6 +4,7 @@ import { requireRole } from "@/features/auth/lib/session";
 
 const ADMIN_NAV_ITEMS: PortalNavItem[] = [
   { href: "/admin", label: "Tableau de bord", shortLabel: "Accueil", icon: "dashboard" },
+  { href: "/admin/dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: "file" },
   { href: "/admin/statistiques", label: "Statistiques", shortLabel: "Stats", icon: "stats" },
   { href: "/admin/alertes-fraude", label: "Alertes fraude", shortLabel: "Fraude", icon: "fraud" },
 ];
