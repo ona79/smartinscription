@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   AppointmentStatus,
+  BuStatus,
   DocumentStatus,
   DocumentType,
   PaymentMethod,
@@ -310,15 +311,66 @@ async function main() {
   });
   await prisma.student.createMany({ data: studentsData });
 
-  // 3. Créer les 300 Registration (+ 2 doublons pour cas de fraude)
+  // 3. Créer les 300 Registration (+ ~40% d'historique antérieur pour L2/L3/M1/M2 et 2 doublons fraude)
+  const agentUser = await prisma.user.findFirst({
+    where: { role: { in: [Role.AGENT, Role.ADMIN] } },
+    select: { id: true },
+  });
+
   const registrationsData = studentsData.map((s, idx) => {
     const n = idx + 1;
+    const statut = pickRegistrationStatus(idx);
+    const buActive = statut === RegistrationStatus.VALIDATED && idx % 10 < 7;
     return {
       id: `demo-reg-${n}`,
       studentId: s.id,
       anneeAcademique: ACADEMIC_YEAR,
-      statut: pickRegistrationStatus(idx),
+      niveau: s.niveau,
+      statut,
+      buStatus: buActive ? BuStatus.ACTIVE : BuStatus.NONE,
+      buValidatedAt: buActive ? new Date(now.getTime() - (idx % 14) * 86400_000) : null,
+      buValidatedById: buActive ? (agentUser?.id ?? null) : null,
     };
+  });
+
+  const PRIOR_LEVELS: Record<string, { year: string; niveau: string }[]> = {
+    L2: [{ year: "2024-2025", niveau: "L1" }],
+    L3: [
+      { year: "2024-2025", niveau: "L2" },
+      { year: "2023-2024", niveau: "L1" },
+    ],
+    M1: [{ year: "2024-2025", niveau: "L3" }],
+    M2: [{ year: "2024-2025", niveau: "M1" }],
+  };
+
+  const historicalRegistrations: {
+    id: string;
+    studentId: string;
+    anneeAcademique: string;
+    niveau: string;
+    statut: RegistrationStatus;
+    buStatus: BuStatus;
+    buValidatedAt: Date | null;
+    buValidatedById: string | null;
+  }[] = [];
+
+  studentsData.forEach((s, idx) => {
+    // Garde les 2 premiers étudiants pour les doublons fraude ci-dessous
+    if (idx < 2) return;
+    const priors = PRIOR_LEVELS[s.niveau];
+    if (!priors || idx % 5 >= 2) return; // ~40% des L2, L3, M1, M2
+    priors.forEach((p, pIdx) => {
+      historicalRegistrations.push({
+        id: `demo-reg-hist-${idx + 1}-${pIdx + 1}`,
+        studentId: s.id,
+        anneeAcademique: p.year,
+        niveau: p.niveau,
+        statut: RegistrationStatus.VALIDATED,
+        buStatus: BuStatus.ACTIVE,
+        buValidatedAt: new Date(`${p.year.slice(0, 4)}-11-15T10:00:00.000Z`),
+        buValidatedById: agentUser?.id ?? null,
+      });
+    });
   });
 
   // 2 étudiants inscrits deux fois (campagne précédente chevauchante)
@@ -327,17 +379,25 @@ async function main() {
       id: "demo-reg-dup-1",
       studentId: studentsData[0].id,
       anneeAcademique: "2024-2025",
+      niveau: studentsData[0].niveau,
       statut: RegistrationStatus.PAID,
+      buStatus: BuStatus.NONE,
+      buValidatedAt: null,
+      buValidatedById: null,
     },
     {
       id: "demo-reg-dup-2",
       studentId: studentsData[1].id,
       anneeAcademique: "2024-2025",
+      niveau: studentsData[1].niveau,
       statut: RegistrationStatus.PAID,
+      buStatus: BuStatus.NONE,
+      buValidatedAt: null,
+      buValidatedById: null,
     },
   ];
   await prisma.registration.createMany({
-    data: [...registrationsData, ...duplicateRegistrations],
+    data: [...registrationsData, ...historicalRegistrations, ...duplicateRegistrations],
   });
 
   // 4. Créer les Payment (1 SUCCESS par inscription payée, + tentatives FAILED/PENDING, + 3 doublons)

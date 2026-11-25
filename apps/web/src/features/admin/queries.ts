@@ -81,7 +81,10 @@ export async function getAdminDashboardMetrics() {
   ] = await Promise.all([
     prisma.student.count(),
     prisma.payment.aggregate({
-      where: { statut: PAYMENT_STATUSES.SUCCESS },
+      where: {
+        statut: PAYMENT_STATUSES.SUCCESS,
+        registration: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
+      },
       _count: { id: true },
       _sum: { montant: true },
     }),
@@ -171,7 +174,10 @@ export async function getAdminStatistics() {
     }),
     prisma.payment.groupBy({
       by: ["moyen"],
-      where: { statut: PAYMENT_STATUSES.SUCCESS },
+      where: {
+        statut: PAYMENT_STATUSES.SUCCESS,
+        registration: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
+      },
       _count: { id: true },
       _sum: { montant: true },
     }),
@@ -187,6 +193,7 @@ export async function getAdminStatistics() {
       take: 60,
     }),
     prisma.registration.findMany({
+      where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
       select: { createdAt: true },
       orderBy: { createdAt: "asc" },
       take: 200,

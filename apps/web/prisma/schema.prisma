@@ -68,6 +68,11 @@ enum AiClassification {
   SUSPECT
 }
 
+enum BuStatus {
+  NONE
+  ACTIVE
+}
+
 model User {
   id          String    @id @db.Uuid
   email       String    @unique
@@ -79,9 +84,10 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  student       Student?
-  notifications Notification[]
-  activities    ActivityLog[]
+  student                    Student?
+  notifications              Notification[]
+  activities                 ActivityLog[]
+  validatedBuRegistrations   Registration[] @relation("BuValidator")
 
   @@index([role])
   @@index([createdAt])
@@ -118,6 +124,7 @@ model Student {
   birthDate      DateTime?
   birthPlace     String?
   nationality    String?
+  cardQrVersion  Int       @default(1)
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   ufr           UFR            @relation(fields: [ufrId], references: [id])
@@ -133,23 +140,29 @@ model Registration {
   id              String             @id @default(cuid())
   studentId       String
   anneeAcademique String
+  niveau          String?
   statut          RegistrationStatus @default(DRAFT)
+  buStatus        BuStatus           @default(NONE)
+  buValidatedAt   DateTime?
+  buValidatedById String?            @db.Uuid
   aiClass         AiClassification?
   aiScore         Float?
   aiAnalyzedAt    DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
-  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  payments    Payment[]
-  documents   Document[]
-  fraudAlerts FraudAlert[]
+  student       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  buValidatedBy User?        @relation("BuValidator", fields: [buValidatedById], references: [id], onDelete: SetNull)
+  payments      Payment[]
+  documents     Document[]
+  fraudAlerts   FraudAlert[]
 
   @@unique([studentId, anneeAcademique])
   @@index([statut])
   @@index([anneeAcademique])
   @@index([createdAt])
   @@index([statut, updatedAt])
+  @@index([buValidatedById])
 }
 
 model Payment {

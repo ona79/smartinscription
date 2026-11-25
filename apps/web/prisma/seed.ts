@@ -204,10 +204,13 @@ async function main() {
             anneeAcademique: "2026-2027",
           },
         },
-        update: {},
+        update: {
+          niveau: student.niveau,
+        },
         create: {
           studentId: student.id,
           anneeAcademique: "2026-2027",
+          niveau: student.niveau,
           statut: "PAID",
         },
       });
