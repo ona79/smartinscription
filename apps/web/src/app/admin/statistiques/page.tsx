@@ -3,10 +3,9 @@ import {
   ROLES,
   type PaymentMethod,
 } from "@smartinscription/shared";
-import { BarChart3, Sparkles } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -19,6 +18,7 @@ import {
 import { getAdminStatistics } from "@/features/admin/queries";
 import { requireRole } from "@/features/auth/lib/session";
 import { generateIaPredictionsAction } from "@/features/ia/actions";
+import { IaActionButton } from "@/features/ia/components/ia-action-button";
 
 export default async function AdminStatsPage() {
   await requireRole([ROLES.ADMIN]);
@@ -30,15 +30,10 @@ export default async function AdminStatsPage() {
         title="Statistiques & prédictions IA"
         description="Répartition des effectifs par UFR, encaissements par moyen de paiement et prévisions."
         actions={
-          <form action={generateIaPredictionsAction}>
-            <Button
-              type="submit"
-              className="h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              Générer prévisions IA (7j)
-            </Button>
-          </form>
+          <IaActionButton
+            label="Générer prévisions IA (7j)"
+            action={generateIaPredictionsAction}
+          />
         }
       />
 
