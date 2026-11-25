@@ -2,6 +2,7 @@ services:
   - type: web
     name: smartinscription-ia
     runtime: docker
+    region: frankfurt
     dockerfilePath: ./services/ia/Dockerfile
     dockerContext: ./services/ia
     plan: free

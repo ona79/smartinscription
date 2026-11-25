@@ -3,7 +3,10 @@ const IA_BASE_URL =
   process.env.NEXT_PUBLIC_IA_SERVICE_URL ||
   "http://localhost:8000";
 
-const IA_TIMEOUT_MS = 10_000;
+function getIaTimeoutMs(): number {
+  const parsed = Number(process.env.IA_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 10_000;
+}
 
 export interface AffluenceForecastItem {
   date: string;
@@ -56,9 +59,9 @@ export interface ChatbotResponse {
   confidence: number;
 }
 
-async function postToIa<T>(path: string, body: unknown): Promise<T | null> {
+async function fetchIaOnce<T>(path: string, body: unknown, timeoutMs: number): Promise<{ data: T | null; retryable: boolean }> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), IA_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -75,13 +78,28 @@ async function postToIa<T>(path: string, body: unknown): Promise<T | null> {
       cache: "no-store",
       signal: controller.signal,
     });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
+    if (!res.ok) {
+      // 502/503/504 peuvent correspondre à un démarrage à froid (Render)
+      return { data: null, retryable: res.status >= 502 && res.status <= 504 };
+    }
+    return { data: (await res.json()) as T, retryable: false };
   } catch {
-    return null;
+    return { data: null, retryable: true };
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+async function postToIa<T>(path: string, body: unknown): Promise<T | null> {
+  const timeoutMs = getIaTimeoutMs();
+  const first = await fetchIaOnce<T>(path, body, timeoutMs);
+  if (first.data !== null || !first.retryable) {
+    return first.data;
+  }
+
+  // Une seule nouvelle tentative en cas d'erreur réseau ou de démarrage à froid
+  const second = await fetchIaOnce<T>(path, body, timeoutMs);
+  return second.data;
 }
 
 /** Appelle /predict/affluence (jour, heure, UFR). */
