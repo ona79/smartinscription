@@ -20,6 +20,8 @@
     "db:generate": "pnpm --filter @smartinscription/web db:generate",
     "db:migrate": "pnpm --filter @smartinscription/web db:migrate",
     "db:seed": "pnpm --filter @smartinscription/web db:seed",
+    "db:seed:demo": "pnpm --filter @smartinscription/web db:seed:demo",
+    "db:seed:demo:reset": "pnpm --filter @smartinscription/web db:seed:demo:reset",
     "db:studio": "pnpm --filter @smartinscription/web db:studio"
   },
   "devDependencies": {

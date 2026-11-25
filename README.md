@@ -77,6 +77,8 @@ Plateforme web et mobile (PWA) de paiement et de gestion des inscriptions univer
 | `pnpm db:generate` | Génère le client Prisma |
 | `pnpm db:migrate` | Crée/exécute les migrations Prisma (`prisma migrate dev`) |
 | `pnpm db:seed` | Exécute le script de seed (`apps/web/prisma/seed.ts`) |
+| `pnpm db:seed:demo` | Génère ~300 étudiants synthétiques `demo.*` (idempotent, protégé en production) |
+| `pnpm db:seed:demo:reset` | Supprime uniquement les données de démonstration `demo.*` |
 | `pnpm db:studio` | Ouvre Prisma Studio |
 
 ## Structure du dépôt
