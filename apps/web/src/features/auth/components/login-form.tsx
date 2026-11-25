@@ -10,8 +10,12 @@ import { TestAccountsHelper } from "@/features/auth/components/test-accounts-hel
 
 const initialState: AuthActionState = {};
 
+interface LoginFormProps {
+  showTestAccounts?: boolean;
+}
+
 /** Formulaire de connexion minimaliste avec icônes, bascule mot de passe et aide comptes de test. */
-export function LoginForm() {
+export function LoginForm({ showTestAccounts = false }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -94,12 +98,14 @@ export function LoginForm() {
         </p>
       </form>
 
-      <TestAccountsHelper
-        onSelectAccount={(selectedEmail, selectedPassword) => {
-          setEmail(selectedEmail);
-          setPassword(selectedPassword);
-        }}
-      />
+      {showTestAccounts && (
+        <TestAccountsHelper
+          onSelectAccount={(selectedEmail, selectedPassword) => {
+            setEmail(selectedEmail);
+            setPassword(selectedPassword);
+          }}
+        />
+      )}
     </div>
   );
 }

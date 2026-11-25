@@ -4,6 +4,10 @@ import { ROLE_DEFAULT_ROUTES, ROLES } from "@smartinscription/shared";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import {
+  getUnlockedTestAccounts,
+  type TestAccountItem,
+} from "@/features/auth/lib/test-accounts";
 import { prisma } from "@/lib/prisma";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -197,32 +201,13 @@ export async function logoutAction(): Promise<void> {
   redirect("/connexion");
 }
 
-export interface TestAccountItem {
-  roleLabel: string;
-  email: string;
-  password: string;
-}
+export type { TestAccountItem };
 
-/** Vérifie le code d'accès et retourne la liste des comptes de test pour l'équipe. */
+/** Vérifie le code d'accès et retourne les comptes de test (dev + ENABLE_TEST_ACCOUNTS=true uniquement). */
 export async function unlockTestAccountsAction(passcode: string): Promise<{
   ok: boolean;
   accounts?: TestAccountItem[];
   error?: string;
 }> {
-  const expected = process.env.TEST_ACCOUNTS_PASSCODE || "kassa";
-  if (passcode.trim() !== expected) {
-    return { ok: false, error: "Code d'accès incorrect." };
-  }
-
-  const seedPassword = process.env.SEED_DEFAULT_PASSWORD ?? "SmartPass2026!";
-
-  return {
-    ok: true,
-    accounts: [
-      { roleLabel: "Admin", email: "admin@smartinscription.sn", password: seedPassword },
-      { roleLabel: "Agent", email: "agent@smartinscription.sn", password: seedPassword },
-      { roleLabel: "Étudiant (payé)", email: "etudiant@smartinscription.sn", password: seedPassword },
-      { roleLabel: "Étudiant (Awa)", email: "awa.sarr@smartinscription.sn", password: "TestPass2026!" },
-    ],
-  };
+  return getUnlockedTestAccounts(passcode);
 }
