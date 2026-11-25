@@ -60,6 +60,9 @@ Ce guide décrit le déploiement complet en production sur **Vercel** (Next.js),
 | `CRON_SECRET` | Secret protégeant `/api/cron/reminders` | *(>= 16 caractères)* |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Envoi d'e-mails transactionnels | *(console Resend)* |
 | `REGISTRATION_CLOSE_DATE` | Date de clôture pour rappels J-7/J-3/J-1 | `2026-12-15` |
+| `STORAGE_PROVIDER` | Stockage pièces (`supabase` ou `cloudinary`) | `supabase` |
+| `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | Identifiants Cloudinary (serveur uniquement) | *(si `cloudinary`)* |
+| `CARD_QR_SECRET` | Signature HMAC-SHA256 du QR d'identité (≥ 32 octets) | `openssl rand -base64 32` |
 
 ---
 
