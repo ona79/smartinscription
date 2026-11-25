@@ -3,8 +3,12 @@ import {
   DOCUMENT_TYPES,
   PAYMENT_STATUSES,
 } from "@smartinscription/shared";
+import {
+  buildCardQrPayload,
+  renderCardQrSvg,
+} from "@/features/carte-qr/services/card-qr-service";
 import { getSignedDocumentUrl } from "@/features/documents/services/document-service";
-import { generateQrDataUrl } from "@/features/recu/services/receipt-service";
+import { buildAcademicTableColumns } from "@/features/dossier/lib/academic-table";
 import { prisma } from "@/lib/prisma";
 
 export interface UfrWithFilieres {
@@ -76,7 +80,7 @@ export async function getStudentDashboardData(userId: string) {
   };
 }
 
-/** Récupère les données complètes de la carte étudiante numérique + photo signée + QR. */
+/** Récupère les données complètes de la carte étudiante numérique + photo signée + QR d'identité + tableau SCOLARITÉ/BU. */
 export async function getStudentDossierWithCard(userId: string) {
   const student = await prisma.student.findUnique({
     where: { userId },
@@ -87,14 +91,18 @@ export async function getStudentDossierWithCard(userId: string) {
       birthDate: true,
       birthPlace: true,
       nationality: true,
+      cardQrVersion: true,
       ufr: { select: { nom: true, code: true } },
       filiere: { select: { nom: true } },
       registrations: {
-        where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
+        orderBy: { anneeAcademique: "asc" },
         select: {
           id: true,
           anneeAcademique: true,
+          niveau: true,
           statut: true,
+          buStatus: true,
+          buValidatedAt: true,
           payments: {
             where: { statut: PAYMENT_STATUSES.SUCCESS },
             select: { qrToken: true },
@@ -111,31 +119,51 @@ export async function getStudentDossierWithCard(userId: string) {
             take: 1,
           },
         },
-        take: 1,
       },
     },
   });
 
-  const registration = student?.registrations[0] ?? null;
+  const registration =
+    student?.registrations.find((r) => r.anneeAcademique === CURRENT_ACADEMIC_YEAR) ??
+    student?.registrations[student.registrations.length - 1] ??
+    null;
   const photoDoc = registration?.documents[0] ?? null;
   const qrToken = registration?.payments[0]?.qrToken ?? null;
 
-  const [photoUrl, qrDataUrl] = await Promise.all([
+  const cardQrPayload = student
+    ? buildCardQrPayload({ studentId: student.id, version: student.cardQrVersion })
+    : null;
+
+  const [photoUrl, cardQrSvg] = await Promise.all([
     photoDoc
       ? getSignedDocumentUrl(photoDoc.url, {
           expiresInSeconds: 600,
           isPhoto: true,
         })
       : Promise.resolve(null),
-    qrToken ? generateQrDataUrl(qrToken) : Promise.resolve(null),
+    cardQrPayload ? renderCardQrSvg(cardQrPayload) : Promise.resolve(null),
   ]);
+
+  const cardQrSvgUrl = cardQrSvg
+    ? `data:image/svg+xml;utf8,${encodeURIComponent(cardQrSvg)}`
+    : null;
+
+  const academicColumns =
+    student && registration
+      ? buildAcademicTableColumns({
+          currentAcademicYear: registration.anneeAcademique,
+          currentNiveau: registration.niveau ?? student.niveau,
+          registrations: student.registrations,
+        })
+      : [];
 
   return {
     student,
     registration,
     photoDoc,
     photoUrl,
-    qrDataUrl,
+    cardQrSvgUrl,
+    academicColumns,
     isPaid: Boolean(qrToken),
   };
 }

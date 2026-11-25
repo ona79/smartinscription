@@ -6,26 +6,31 @@ import {
   ROLES,
 } from "@smartinscription/shared";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { requireRole } from "@/features/auth/lib/session";
 import {
   completeProfileSchema,
   updateBirthInfoSchema,
 } from "@/features/dossier/schemas";
+import { updateRegistrationBuStatus } from "@/features/dossier/services/bu-service";
+import {
+  actionError,
+  actionOk,
+  actionValidationError,
+  type ActionResult,
+} from "@/lib/action-result";
+import { toActionError } from "@/lib/app-error";
+import { MESSAGES } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 
-export interface ProfileActionState {
-  ok?: boolean;
-  error?: string;
-  success?: string;
-  registrationId?: string;
-}
+export type ProfileActionState = ActionResult<{ registrationId?: string }>;
 
 /**
  * Complète le profil académique + état civil de l'étudiant et crée son dossier
  * d'inscription au statut DRAFT pour l'année académique courante.
  */
 export async function completeStudentProfileAction(
-  _prevState: ProfileActionState,
+  _prevState: ProfileActionState | null,
   formData: FormData
 ): Promise<ProfileActionState> {
   const user = await requireRole([ROLES.STUDENT]);
@@ -41,9 +46,7 @@ export async function completeStudentProfileAction(
   });
 
   if (!parsed.success) {
-    return {
-      error: parsed.error.issues[0]?.message ?? "Les informations saisies sont invalides.",
-    };
+    return actionValidationError(parsed.error);
   }
 
   const {
@@ -57,77 +60,81 @@ export async function completeStudentProfileAction(
   } = parsed.data;
   const normalizedNumero = numeroEtudiant.toUpperCase();
 
-  const filiere = await prisma.filiere.findFirst({
-    where: { id: filiereId, ufrId },
-  });
+  try {
+    const filiere = await prisma.filiere.findFirst({
+      where: { id: filiereId, ufrId },
+    });
 
-  if (!filiere) {
-    return { error: "La filière sélectionnée ne correspond pas à l'UFR choisie." };
-  }
+    if (!filiere) {
+      return actionError(MESSAGES.dossier.filiereMismatch, {
+        filiereId: MESSAGES.dossier.filiereMismatch,
+      });
+    }
 
-  const existingStudent = await prisma.student.findUnique({
-    where: { userId: user.id },
-    select: {
-      id: true,
-      registrations: {
-        where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
-        select: { id: true },
-        take: 1,
-      },
-    },
-  });
-
-  if (existingStudent) {
-    return {
-      ok: true,
-      registrationId: existingStudent.registrations[0]?.id,
-    };
-  }
-
-  const duplicateNumero = await prisma.student.findUnique({
-    where: { numeroEtudiant: normalizedNumero },
-    select: { id: true },
-  });
-
-  if (duplicateNumero) {
-    return {
-      error: "Ce numéro étudiant est déjà associé à un autre compte.",
-    };
-  }
-
-  let createdRegistrationId = "";
-  await prisma.$transaction(async (tx) => {
-    const student = await tx.student.create({
-      data: {
-        userId: user.id,
-        numeroEtudiant: normalizedNumero,
-        ufrId,
-        filiereId,
-        niveau,
-        birthDate: new Date(`${birthDate}T00:00:00.000Z`),
-        birthPlace,
-        nationality,
+    const existingStudent = await prisma.student.findUnique({
+      where: { userId: user.id },
+      select: {
+        id: true,
+        registrations: {
+          where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
-    const reg = await tx.registration.create({
-      data: {
-        studentId: student.id,
-        anneeAcademique: CURRENT_ACADEMIC_YEAR,
-        statut: REGISTRATION_STATUSES.DRAFT,
-      },
+    if (existingStudent) {
+      return actionOk(MESSAGES.dossier.alreadyExists, {
+        registrationId: existingStudent.registrations[0]?.id,
+      });
+    }
+
+    const duplicateNumero = await prisma.student.findUnique({
+      where: { numeroEtudiant: normalizedNumero },
       select: { id: true },
     });
-    createdRegistrationId = reg.id;
-  });
 
-  revalidatePath("/etudiant");
-  revalidatePath("/etudiant/dossier");
-  return {
-    ok: true,
-    registrationId: createdRegistrationId,
-    success: "Dossier enregistré.",
-  };
+    if (duplicateNumero) {
+      return actionError("Ce numéro étudiant est déjà associé à un autre compte.", {
+        numeroEtudiant: "Ce numéro étudiant est déjà associé à un autre compte.",
+      });
+    }
+
+    let createdRegistrationId = "";
+    await prisma.$transaction(async (tx) => {
+      const student = await tx.student.create({
+        data: {
+          userId: user.id,
+          numeroEtudiant: normalizedNumero,
+          ufrId,
+          filiereId,
+          niveau,
+          birthDate: new Date(`${birthDate}T00:00:00.000Z`),
+          birthPlace,
+          nationality,
+        },
+      });
+
+      const reg = await tx.registration.create({
+        data: {
+          studentId: student.id,
+          anneeAcademique: CURRENT_ACADEMIC_YEAR,
+          niveau,
+          statut: REGISTRATION_STATUSES.DRAFT,
+        },
+        select: { id: true },
+      });
+      createdRegistrationId = reg.id;
+    });
+
+    revalidatePath("/etudiant");
+    revalidatePath("/etudiant/dossier");
+    return actionOk(MESSAGES.dossier.profileSuccess, {
+      registrationId: createdRegistrationId,
+    });
+  } catch (error) {
+    return toActionError(error, "dossier.completeProfile");
+  }
 }
 
 /**
@@ -135,9 +142,9 @@ export async function completeStudentProfileAction(
  * tant que l'inscription n'est pas VALIDATED.
  */
 export async function updateStudentBirthInfoAction(
-  _prevState: ProfileActionState,
+  _prevState: ActionResult | null,
   formData: FormData
-): Promise<ProfileActionState> {
+): Promise<ActionResult> {
   const user = await requireRole([ROLES.STUDENT]);
 
   const parsed = updateBirthInfoSchema.safeParse({
@@ -147,48 +154,84 @@ export async function updateStudentBirthInfoAction(
   });
 
   if (!parsed.success) {
-    return {
-      error: parsed.error.issues[0]?.message ?? "Informations invalides.",
-    };
+    return actionValidationError(parsed.error);
   }
 
-  const student = await prisma.student.findUnique({
-    where: { userId: user.id },
-    select: {
-      id: true,
-      registrations: {
-        where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
-        select: { id: true, statut: true },
-        take: 1,
+  try {
+    const student = await prisma.student.findUnique({
+      where: { userId: user.id },
+      select: {
+        id: true,
+        registrations: {
+          where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
+          select: { id: true, statut: true },
+          take: 1,
+        },
       },
-    },
-  });
+    });
 
-  if (!student) {
-    return { error: "Profil étudiant introuvable." };
+    if (!student) {
+      return actionError(MESSAGES.dossier.profileNotFound);
+    }
+
+    const reg = student.registrations[0];
+    if (reg?.statut === REGISTRATION_STATUSES.VALIDATED) {
+      return actionError(MESSAGES.dossier.birthInfoLocked);
+    }
+
+    await prisma.student.update({
+      where: { id: student.id },
+      data: {
+        birthDate: new Date(`${parsed.data.birthDate}T00:00:00.000Z`),
+        birthPlace: parsed.data.birthPlace,
+        nationality: parsed.data.nationality,
+      },
+    });
+
+    revalidatePath("/etudiant");
+    revalidatePath("/etudiant/dossier");
+    if (reg) {
+      revalidatePath(`/agent/dossiers/${reg.id}`);
+    }
+
+    return actionOk(MESSAGES.dossier.birthInfoSuccess);
+  } catch (error) {
+    return toActionError(error, "dossier.updateBirthInfo");
+  }
+}
+
+const buStatusSchema = z.object({
+  registrationId: z.string().trim().min(1),
+  status: z.enum(["NONE", "ACTIVE"]),
+});
+
+/** Action agent/admin : active ou désactive l'accès BU d'une inscription payée. */
+export async function setBuStatusAction(
+  registrationId: string,
+  status: "NONE" | "ACTIVE"
+): Promise<ActionResult> {
+  const user = await requireRole([ROLES.AGENT, ROLES.ADMIN]);
+  const parsed = buStatusSchema.safeParse({ registrationId, status });
+  if (!parsed.success) {
+    return actionValidationError(parsed.error);
   }
 
-  const reg = student.registrations[0];
-  if (reg?.statut === REGISTRATION_STATUSES.VALIDATED) {
-    return {
-      error: "Dossier déjà validé : modification des informations bloquée.",
-    };
+  try {
+    await updateRegistrationBuStatus({
+      registrationId: parsed.data.registrationId,
+      status: parsed.data.status,
+      actorId: user.id,
+      actorRole: user.role,
+    });
+    revalidatePath("/etudiant");
+    revalidatePath("/etudiant/dossier");
+    revalidatePath(`/agent/dossiers/${parsed.data.registrationId}`);
+    return actionOk(
+      parsed.data.status === "ACTIVE"
+        ? MESSAGES.bu.activated
+        : MESSAGES.bu.deactivated
+    );
+  } catch (error) {
+    return toActionError(error, "dossier.setBuStatus");
   }
-
-  await prisma.student.update({
-    where: { id: student.id },
-    data: {
-      birthDate: new Date(`${parsed.data.birthDate}T00:00:00.000Z`),
-      birthPlace: parsed.data.birthPlace,
-      nationality: parsed.data.nationality,
-    },
-  });
-
-  revalidatePath("/etudiant");
-  revalidatePath("/etudiant/dossier");
-  if (reg) {
-    revalidatePath(`/agent/dossiers/${reg.id}`);
-  }
-
-  return { ok: true, success: "Informations de naissance mises à jour." };
 }

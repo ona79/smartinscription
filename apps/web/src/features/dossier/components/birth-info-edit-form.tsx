@@ -1,13 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
-import { Calendar, Check, Globe, Loader2, MapPin } from "lucide-react";
+import { Calendar, Globe, Loader2, MapPin } from "lucide-react";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import {
-  updateStudentBirthInfoAction,
-  type ProfileActionState,
-} from "@/features/dossier/actions";
+import { updateStudentBirthInfoAction } from "@/features/dossier/actions";
+import { useFormActionToast } from "@/hooks/use-action-toast";
 
 interface BirthInfoEditFormProps {
   birthDate: Date | string | null;
@@ -15,8 +12,6 @@ interface BirthInfoEditFormProps {
   nationality: string | null;
   disabled?: boolean;
 }
-
-const initialState: ProfileActionState = {};
 
 function toDateInputValue(value: Date | string | null): string {
   if (!value) return "";
@@ -32,9 +27,8 @@ export function BirthInfoEditForm({
   nationality,
   disabled = false,
 }: BirthInfoEditFormProps) {
-  const [state, formAction, isPending] = useActionState(
-    updateStudentBirthInfoAction,
-    initialState
+  const { formAction, isPending, fieldErrors } = useFormActionToast(
+    updateStudentBirthInfoAction
   );
 
   return (
@@ -48,6 +42,7 @@ export function BirthInfoEditForm({
           defaultValue={toDateInputValue(birthDate)}
           disabled={disabled || isPending}
           required
+          error={fieldErrors.birthDate}
           icon={<Calendar className="h-4 w-4" />}
         />
         <FormField
@@ -58,6 +53,7 @@ export function BirthInfoEditForm({
           placeholder="Ex : Ziguinchor"
           disabled={disabled || isPending}
           required
+          error={fieldErrors.birthPlace}
           icon={<MapPin className="h-4 w-4" />}
         />
         <FormField
@@ -68,21 +64,10 @@ export function BirthInfoEditForm({
           placeholder="Ex : Sénégalaise"
           disabled={disabled || isPending}
           required
+          error={fieldErrors.nationality}
           icon={<Globe className="h-4 w-4" />}
         />
       </div>
-
-      {state.error && (
-        <p role="alert" className="text-xs font-medium text-destructive">
-          {state.error}
-        </p>
-      )}
-      {state.success && (
-        <p className="flex items-center gap-1 text-xs font-medium text-success">
-          <Check className="h-3.5 w-3.5" />
-          {state.success}
-        </p>
-      )}
 
       {!disabled && (
         <Button
@@ -90,7 +75,7 @@ export function BirthInfoEditForm({
           variant="outline"
           size="sm"
           disabled={isPending}
-          className="h-9 rounded-lg text-[13px]"
+          className="w-full rounded-lg text-[13px] sm:w-auto"
         >
           {isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
           Mettre à jour mes informations

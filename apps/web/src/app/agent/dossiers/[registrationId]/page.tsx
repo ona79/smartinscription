@@ -10,18 +10,24 @@ import {
   type DocumentType,
   type RegistrationStatus,
 } from "@smartinscription/shared";
-import { ArrowLeft, CheckCircle2, FileText, XCircle } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import { requireRole } from "@/features/auth/lib/session";
-import { finalizeRegistrationAction } from "@/features/documents/actions";
+import { RegenerateCardQrButton } from "@/features/carte-qr/components/regenerate-card-qr-button";
+import {
+  buildCardQrPayload,
+  renderCardQrSvg,
+} from "@/features/carte-qr/services/card-qr-service";
 import { DocumentReviewItem } from "@/features/documents/components/document-review-item";
+import { FinalizeRegistrationBar } from "@/features/documents/components/finalize-registration-bar";
 import { getSignedDocumentUrl } from "@/features/documents/services/document-service";
+import { BuAccessPanel } from "@/features/dossier/components/bu-access-panel";
 import { StudentCard } from "@/features/dossier/components/student-card";
-import { generateQrDataUrl } from "@/features/recu/services/receipt-service";
+import { buildAcademicTableColumns } from "@/features/dossier/lib/academic-table";
+import { isBuEligibleStatus } from "@/features/dossier/services/bu-service";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +36,7 @@ interface AgentDossierDetailProps {
 }
 
 export default async function AgentDossierDetailPage({ params }: AgentDossierDetailProps) {
-  await requireRole([ROLES.AGENT, ROLES.ADMIN]);
+  const actor = await requireRole([ROLES.AGENT, ROLES.ADMIN]);
   const { registrationId } = await params;
 
   const registration = await prisma.registration.findUnique({
@@ -38,17 +44,32 @@ export default async function AgentDossierDetailPage({ params }: AgentDossierDet
     select: {
       id: true,
       anneeAcademique: true,
+      niveau: true,
       statut: true,
+      buStatus: true,
+      buValidatedAt: true,
+      buValidatedBy: { select: { prenom: true, nom: true } },
       student: {
         select: {
+          id: true,
           numeroEtudiant: true,
           niveau: true,
           birthDate: true,
           birthPlace: true,
           nationality: true,
+          cardQrVersion: true,
           user: { select: { prenom: true, nom: true, email: true, telephone: true } },
           ufr: { select: { nom: true, code: true } },
           filiere: { select: { nom: true } },
+          registrations: {
+            orderBy: { anneeAcademique: "asc" },
+            select: {
+              anneeAcademique: true,
+              niveau: true,
+              statut: true,
+              buStatus: true,
+            },
+          },
         },
       },
       payments: {
@@ -79,19 +100,34 @@ export default async function AgentDossierDetailPage({ params }: AgentDossierDet
   const photoDoc = registration.documents.find((d) => d.type === DOCUMENT_TYPES.PHOTO);
   const qrToken = registration.payments[0]?.qrToken ?? null;
 
-  const [photoUrl, qrDataUrl] = await Promise.all([
+  const cardQrPayload = buildCardQrPayload({
+    studentId: student.id,
+    version: student.cardQrVersion,
+  });
+
+  const [photoUrl, cardQrSvg] = await Promise.all([
     photoDoc
       ? getSignedDocumentUrl(photoDoc.url, { expiresInSeconds: 600, isPhoto: true })
       : Promise.resolve(null),
-    qrToken ? generateQrDataUrl(qrToken) : Promise.resolve(null),
+    renderCardQrSvg(cardQrPayload),
   ]);
+
+  const cardQrSvgUrl = `data:image/svg+xml;utf8,${encodeURIComponent(cardQrSvg)}`;
+  const academicColumns = buildAcademicTableColumns({
+    currentAcademicYear: registration.anneeAcademique,
+    currentNiveau: registration.niveau ?? student.niveau,
+    registrations: student.registrations,
+  });
+  const buValidatedByName = registration.buValidatedBy
+    ? `${registration.buValidatedBy.prenom} ${registration.buValidatedBy.nom}`
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex items-center gap-2">
         <Link
           href="/agent"
-          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-9 rounded-lg")}
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "rounded-lg")}
         >
           <ArrowLeft className="mr-1.5 h-4 w-4" />
           Retour à la liste
@@ -100,7 +136,7 @@ export default async function AgentDossierDetailPage({ params }: AgentDossierDet
 
       <PageHeader
         title={`${student.user.prenom} ${student.user.nom}`}
-        description={`${student.numeroEtudiant} · ${student.ufr.nom} · ${student.filiere.nom} (${student.niveau})`}
+        description={`${student.numeroEtudiant} · ${student.ufr.nom} · ${student.filiere.nom} (${registration.niveau ?? student.niveau})`}
         badge={
           <Badge className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
             {REGISTRATION_STATUS_LABELS_FR[regStatus]}
@@ -108,40 +144,58 @@ export default async function AgentDossierDetailPage({ params }: AgentDossierDet
         }
       />
 
-      <div className="grid gap-5 lg:grid-cols-12">
-        {/* Carte étudiante en lecture seule */}
-        <div className="lg:col-span-5">
-          <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
-            <CardHeader className="p-5 pb-2">
-              <CardTitle className="text-base font-semibold">
-                Carte étudiante (lecture seule)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 pt-2">
-              <StudentCard
-                editable={false}
-                student={{
-                  numeroEtudiant: student.numeroEtudiant,
-                  nom: student.user.nom,
-                  prenom: student.user.prenom,
-                  birthDate: student.birthDate,
-                  birthPlace: student.birthPlace,
-                  nationality: student.nationality,
-                  telephone: student.user.telephone,
-                  email: student.user.email,
-                  ufrName: student.ufr.nom,
-                  ufrCode: student.ufr.code,
-                  filiereName: student.filiere.nom,
-                  niveau: student.niveau,
-                  anneeAcademique: registration.anneeAcademique,
-                  photoUrl,
-                  qrDataUrl,
-                  isPaid: Boolean(qrToken),
-                }}
-              />
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
+        {/* Carte étudiante compacte en lecture seule + panneau BU */}
+        <section
+          className="space-y-4 lg:col-span-5"
+          aria-labelledby="agent-card-heading"
+        >
+          <div className="space-y-2.5">
+            <h2
+              id="agent-card-heading"
+              className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:text-left"
+            >
+              Carte étudiante (lecture seule)
+            </h2>
+            <StudentCard
+              editable={false}
+              student={{
+                numeroEtudiant: student.numeroEtudiant,
+                nom: student.user.nom,
+                prenom: student.user.prenom,
+                birthDate: student.birthDate,
+                birthPlace: student.birthPlace,
+                nationality: student.nationality,
+                telephone: student.user.telephone,
+                email: student.user.email,
+                ufrName: student.ufr.nom,
+                ufrCode: student.ufr.code,
+                filiereName: student.filiere.nom,
+                niveau: registration.niveau ?? student.niveau,
+                anneeAcademique: registration.anneeAcademique,
+                photoUrl,
+                cardQrSvgUrl,
+                academicColumns,
+                isPaid: Boolean(qrToken),
+              }}
+            />
+          </div>
+
+          <BuAccessPanel
+            registrationId={registration.id}
+            buStatus={registration.buStatus}
+            buValidatedAt={registration.buValidatedAt}
+            buValidatedByName={buValidatedByName}
+            isPaymentConfirmed={isBuEligibleStatus(regStatus)}
+          />
+
+          {actor.role === ROLES.ADMIN && (
+            <RegenerateCardQrButton
+              studentId={student.id}
+              registrationId={registration.id}
+            />
+          )}
+        </section>
 
         {/* Panneau des pièces justificatives */}
         <div className="space-y-4 lg:col-span-7">
@@ -166,45 +220,7 @@ export default async function AgentDossierDetailPage({ params }: AgentDossierDet
             </div>
           )}
 
-          {canFinalize && (
-            <Card className="rounded-xl border border-brand/30 bg-accent/40 py-0 shadow-xs">
-              <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">
-                    Toutes les pièces sont approuvées
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Vous pouvez maintenant valider définitivement l&apos;inscription de l&apos;étudiant.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <form action={finalizeRegistrationAction}>
-                    <input type="hidden" name="registrationId" value={registration.id} />
-                    <input type="hidden" name="decision" value="VALIDATED" />
-                    <Button
-                      type="submit"
-                      className="h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Valider le dossier
-                    </Button>
-                  </form>
-                  <form action={finalizeRegistrationAction}>
-                    <input type="hidden" name="registrationId" value={registration.id} />
-                    <input type="hidden" name="decision" value="REJECTED" />
-                    <Button
-                      type="submit"
-                      variant="destructive"
-                      className="h-10 rounded-lg px-4 text-sm font-medium"
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Rejeter
-                    </Button>
-                  </form>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {canFinalize && <FinalizeRegistrationBar registrationId={registration.id} />}
         </div>
       </div>
     </div>

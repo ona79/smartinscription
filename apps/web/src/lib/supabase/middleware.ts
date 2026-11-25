@@ -71,8 +71,14 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && matchedProtected) {
     const url = request.nextUrl.clone();
+    const hadSessionCookie = request.cookies
+      .getAll()
+      .some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
     url.pathname = "/connexion";
     url.searchParams.set("next", pathname);
+    if (hadSessionCookie) {
+      url.searchParams.set("raison", "session-expiree");
+    }
     return NextResponse.redirect(url);
   }
 
@@ -85,9 +91,14 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (matchedProtected && !matchedProtected.allowedRoles.includes(role)) {
+    if (
+      matchedProtected &&
+      !pathname.startsWith("/verification/carte") &&
+      !matchedProtected.allowedRoles.includes(role)
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = ROLE_DEFAULT_ROUTES[role];
+      url.searchParams.set("raison", "acces-refuse");
       return NextResponse.redirect(url);
     }
   }

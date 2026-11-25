@@ -24,6 +24,9 @@ import { PhotoUploader } from "@/features/documents/components/photo-uploader";
 import { uploadDocumentViaActiveStorage } from "@/features/documents/lib/client-upload";
 import { completeStudentProfileAction } from "@/features/dossier/actions";
 import type { UfrWithFilieres } from "@/features/dossier/queries";
+import { notifyActionResult } from "@/hooks/use-action-toast";
+import type { FieldErrors } from "@/lib/action-result";
+import { MESSAGES } from "@/lib/messages";
 
 interface ProfileCompletionFormProps {
   ufrs: UfrWithFilieres[];
@@ -39,6 +42,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [dossierCreated, setDossierCreated] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
@@ -47,15 +51,19 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setError(null);
+    setFieldErrors({});
     setPhotoError(null);
 
     const formData = new FormData(event.currentTarget);
-    const res = await completeStudentProfileAction({}, formData);
+    const res = await completeStudentProfileAction(null, formData);
 
     if (!res.ok) {
-      setError(res.error ?? "Impossible de créer le dossier.");
+      setError(res.error);
+      setFieldErrors(res.fieldErrors ?? {});
+      notifyActionResult(res);
       setIsSubmitting(false);
       return;
     }
@@ -68,21 +76,20 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         selectedPhoto
       );
       if (!uploadRes.ok) {
-        setPhotoError(
-          uploadRes.error ??
-            "Dossier créé, mais l'envoi de la photo a échoué. Vous pouvez réessayer."
-        );
+        setPhotoError(uploadRes.error);
+        notifyActionResult(uploadRes);
         setIsSubmitting(false);
         return;
       }
     }
 
+    notifyActionResult({ ok: true, message: MESSAGES.dossier.profileSuccess });
     router.push("/etudiant");
     router.refresh();
   }
 
   async function handleRetryPhoto() {
-    if (!selectedPhoto) return;
+    if (!selectedPhoto || isSubmitting) return;
     setIsSubmitting(true);
     setPhotoError(null);
     const uploadRes = await uploadDocumentViaActiveStorage(
@@ -90,8 +97,9 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
       selectedPhoto
     );
     setIsSubmitting(false);
+    notifyActionResult(uploadRes);
     if (!uploadRes.ok) {
-      setPhotoError(uploadRes.error ?? "Échec de l'envoi de la photo.");
+      setPhotoError(uploadRes.error);
       return;
     }
     router.push("/etudiant");
@@ -160,6 +168,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         label="Numéro étudiant"
         placeholder="Ex : SN-2026-0042"
         required
+        error={fieldErrors.numeroEtudiant}
         hint="Votre identifiant universitaire unique (lettres, chiffres et tirets)."
         icon={<Hash className="h-4 w-4" />}
       />
@@ -174,7 +183,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           required
           value={selectedUfrId}
           onChange={(e) => setSelectedUfrId(e.target.value)}
-          className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+          className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-10 sm:text-sm"
         >
           <option value="" disabled>
             Sélectionnez votre UFR
@@ -199,7 +208,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             required
             defaultValue={filieres[0]?.id ?? ""}
             disabled={filieres.length === 0}
-            className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50"
+            className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 sm:h-10 sm:text-sm"
           >
             <option value="" disabled>
               Sélectionnez une filière
@@ -210,6 +219,9 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
               </option>
             ))}
           </select>
+          {fieldErrors.filiereId && (
+            <p className="text-xs font-medium text-destructive">{fieldErrors.filiereId}</p>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -221,7 +233,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             name="niveau"
             required
             defaultValue="L1"
-            className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-10 sm:text-sm"
           >
             {ACADEMIC_LEVELS.map((level) => (
               <option key={level} value={level}>
@@ -239,6 +251,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           type="date"
           label="Date de naissance"
           required
+          error={fieldErrors.birthDate}
           icon={<Calendar className="h-4 w-4" />}
         />
         <FormField
@@ -247,6 +260,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           label="Lieu de naissance"
           placeholder="Ex : Ziguinchor"
           required
+          error={fieldErrors.birthPlace}
           icon={<MapPin className="h-4 w-4" />}
         />
         <FormField
@@ -256,6 +270,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           placeholder="Ex : Sénégalaise"
           defaultValue="Sénégalaise"
           required
+          error={fieldErrors.nationality}
           icon={<Globe className="h-4 w-4" />}
         />
       </div>
@@ -269,6 +284,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         </p>
         <PhotoUploader
           mode="deferred"
+          fullWidthMobile
           label="Ajouter une photo"
           onFileSelected={(file) => setSelectedPhoto(file)}
         />

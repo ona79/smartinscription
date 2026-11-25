@@ -18,25 +18,25 @@ export function VerificationResultCard({
 }: VerificationResultCardProps) {
   if (!result.valid) {
     return (
-      <Card className="rounded-2xl border-destructive/40 bg-surface shadow-none">
-        <CardContent className="flex flex-col items-center space-y-4 p-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-            <XCircle className="h-8 w-8" />
+      <Card className="rounded-xl border-2 border-destructive bg-surface py-0 shadow-xs">
+        <CardContent className="flex flex-col items-center space-y-4 p-5 text-center sm:p-8">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/15 text-destructive">
+            <XCircle className="h-9 w-9" />
           </div>
           <div className="space-y-1">
-            <Badge variant="destructive" className="rounded-full px-3 py-0.5 text-xs">
+            <Badge variant="destructive" className="rounded-full px-3 py-0.5 text-xs font-semibold">
               Invalide
             </Badge>
             <h2 className="pt-2 text-lg font-bold text-foreground">
               Vérification échouée
             </h2>
-            <p className="text-sm text-muted-foreground">{result.error}</p>
+            <p className="text-sm font-medium text-foreground">{result.error}</p>
           </div>
           {onScanAnother ? (
             <Button
               type="button"
               onClick={onScanAnother}
-              className="h-11 rounded-xl bg-brand px-5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+              className="w-full rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark sm:w-auto"
             >
               <QrCode className="mr-2 h-4 w-4" />
               Scanner un autre
@@ -46,7 +46,7 @@ export function VerificationResultCard({
               href="/agent/scan"
               className={cn(
                 buttonVariants({ size: "default" }),
-                "h-11 rounded-xl bg-brand px-5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                "w-full rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark sm:w-auto"
               )}
             >
               <QrCode className="mr-2 h-4 w-4" />
@@ -64,14 +64,14 @@ export function VerificationResultCard({
   });
 
   return (
-    <Card className="rounded-2xl border-success/40 bg-surface shadow-none">
-      <CardContent className="space-y-6 p-6">
+    <Card className="rounded-xl border-2 border-success bg-surface py-0 shadow-xs">
+      <CardContent className="space-y-4 p-4 sm:space-y-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/10 text-success">
-              <CheckCircle2 className="h-6 w-6" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+              <CheckCircle2 className="h-7 w-7" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-lg font-bold text-foreground">{result.studentName}</h2>
               <p className="font-mono text-xs text-muted-foreground">
                 {result.numeroEtudiant} · {result.anneeAcademique}
@@ -97,7 +97,7 @@ export function VerificationResultCard({
           </div>
         </div>
 
-        <dl className="grid gap-4 rounded-xl bg-muted/40 p-4 text-sm sm:grid-cols-2">
+        <dl className="grid gap-3 rounded-xl bg-muted/40 p-3.5 text-sm sm:grid-cols-2 sm:gap-4 sm:p-4">
           <div>
             <dt className="text-xs text-muted-foreground">UFR</dt>
             <dd className="mt-0.5 font-semibold text-foreground">{result.ufrNom}</dd>
