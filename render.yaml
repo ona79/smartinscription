@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: smartinscription-ia
+    runtime: docker
+    dockerfilePath: ./services/ia/Dockerfile
+    dockerContext: ./services/ia
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: IA_API_KEY
+        sync: false

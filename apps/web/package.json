@@ -22,6 +22,8 @@
     "@smartinscription/shared": "workspace:*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.2",
+    "@upstash/ratelimit": "^2.2.1",
+    "@upstash/redis": "^1.41.0",
     "@yudiel/react-qr-scanner": "^2.6.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
