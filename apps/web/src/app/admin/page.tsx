@@ -7,9 +7,9 @@ import {
   type Role,
 } from "@smartinscription/shared";
 import {
-  AlertTriangle,
   Banknote,
-  CheckCircle2,
+  Clock,
+  CreditCard,
   GraduationCap,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { updateUserRoleAction } from "@/features/admin/actions";
+import { AutoRefresh } from "@/features/admin/components/auto-refresh";
 import { getAdminDashboardMetrics } from "@/features/admin/queries";
 import { requireRole } from "@/features/auth/lib/session";
 
@@ -37,7 +38,8 @@ export default async function AdminDashboardPage() {
     <div className="space-y-5">
       <PageHeader
         title="Tableau de bord administrateur"
-        description={`Suivi global des inscriptions et des encaissements (${CURRENT_ACADEMIC_YEAR}).`}
+        description={`Suivi des inscriptions et encaissements (${CURRENT_ACADEMIC_YEAR}).`}
+        actions={<AutoRefresh intervalMs={30_000} />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -48,22 +50,22 @@ export default async function AdminDashboardPage() {
           icon={GraduationCap}
         />
         <StatCard
-          title="Encaissements"
+          title="Transactions réussies"
+          value={metrics.paidCount}
+          description={`${metrics.unresolvedFraudCount} alerte(s) ouverte(s)`}
+          icon={CreditCard}
+        />
+        <StatCard
+          title="Recettes encaissées"
           value={`${metrics.totalRevenueFcfa.toLocaleString("fr-FR")} FCFA`}
-          description={`${metrics.paidCount} paiement(s) confirmé(s)`}
+          description={`Année ${CURRENT_ACADEMIC_YEAR}`}
           icon={Banknote}
         />
         <StatCard
-          title="Dossiers validés"
-          value={metrics.validatedCount}
-          description={`Année ${CURRENT_ACADEMIC_YEAR}`}
-          icon={CheckCircle2}
-        />
-        <StatCard
-          title="Alertes fraude ouvertes"
-          value={metrics.unresolvedFraudCount}
-          description="À traiter dans Alertes fraude"
-          icon={AlertTriangle}
+          title="File active du jour"
+          value={metrics.activeQueueCount}
+          description={`${metrics.paidNotValidatedCount} à valider · ${metrics.todayAppointmentsCount} RDV`}
+          icon={Clock}
         />
       </div>
 
