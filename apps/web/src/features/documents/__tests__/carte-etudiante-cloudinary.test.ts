@@ -66,7 +66,7 @@ describe("CloudinaryStorageProvider — signature, dossier imposé et URL signé
     );
 
     expect(signedPhotoUrl).toContain("/image/authenticated/s--");
-    expect(signedPhotoUrl).toContain("c_fill,g_face,w_360,h_480,f_auto,q_auto");
+    expect(signedPhotoUrl).toContain("c_thumb,g_face,z_0.75,w_360,h_480,f_auto,q_auto");
     expect(signedPhotoUrl).toContain("?exp=");
   });
 });
@@ -203,6 +203,14 @@ describe("Rendu du composant StudentCard", () => {
     expect(html).toContain("Ziguinchor");
     expect(html).toContain("Aperçu numérique, ne remplace pas la carte officielle");
     expect(html).toContain("Ajouter ma photo");
+
+    const missingBirthHtml = renderToStaticMarkup(
+      createElement(StudentCard, {
+        student: { ...baseStudent, birthDate: null, birthPlace: null },
+        editable: false,
+      })
+    );
+    expect(missingBirthHtml).toContain("Né(e) le — à —");
   });
 
   it("affiche la photo signée en mode lecture seule sans bouton d'édition", () => {

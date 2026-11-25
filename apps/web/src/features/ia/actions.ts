@@ -17,12 +17,12 @@ import {
   type ChatbotResponse,
 } from "@/features/ia/services/ia-client";
 import { triggerAnomalyAnalysis } from "@/features/ia/trigger-anomaly-analysis";
+import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
+import { toActionError } from "@/lib/app-error";
+import { MESSAGES } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 
-export interface IaActionResult {
-  ok: boolean;
-  message: string;
-}
+export type IaActionResult = ActionResult;
 
 const LOCAL_FAQ_FALLBACK: { keywords: string[]; topic: string; answer: string }[] = [
   {
@@ -55,81 +55,79 @@ const LOCAL_FAQ_FALLBACK: { keywords: string[]; topic: string; answer: string }[
 export async function generateIaPredictionsAction(): Promise<IaActionResult> {
   await requireRole([ROLES.ADMIN]);
 
-  const [affluence, staffing, ufrs] = await Promise.all([
-    fetchAffluenceAndStaffing(7),
-    fetchStaffingForecast(7, 25),
-    prisma.uFR.findMany({ select: { id: true, code: true } }),
-  ]);
+  try {
+    const [affluence, staffing, ufrs] = await Promise.all([
+      fetchAffluenceAndStaffing(7),
+      fetchStaffingForecast(7, 25),
+      prisma.uFR.findMany({ select: { id: true, code: true } }),
+    ]);
 
-  if (!affluence || !staffing) {
-    return {
-      ok: false,
-      message: "Service IA indisponible, réessayez.",
-    };
+    if (!affluence || !staffing) {
+      return actionError(MESSAGES.ia.unavailable);
+    }
+
+    const ufrByCode = new Map(ufrs.map((u) => [u.code, u.id]));
+
+    const now = new Date();
+    const predictionsData = [
+      ...affluence.forecasts.map((item) => ({
+        type: "AFFLUENCE_JOUR",
+        dateCible: new Date(`${item.date}T00:00:00.000Z`),
+        valeur: item.predicted_registrations,
+      })),
+      ...affluence.hourly_forecasts.map((hourItem) => ({
+        type: "AFFLUENCE_HEURE",
+        dateCible: new Date(`${hourItem.date}T00:00:00.000Z`),
+        heure: hourItem.heure,
+        valeur: hourItem.predicted_registrations,
+      })),
+      ...staffing.ufr_staffing.map((ufrItem) => ({
+        type: "BESOIN_AGENTS",
+        dateCible: now,
+        ufrId: ufrByCode.get(ufrItem.ufr_code) ?? null,
+        valeur: ufrItem.recommended_agents_per_day,
+      })),
+    ];
+
+    await prisma.prediction.createMany({ data: predictionsData });
+
+    revalidatePath("/admin/statistiques");
+    return actionOk(
+      `Prévisions IA générées (${affluence.forecasts.length} jours, granularité horaire et par UFR).`
+    );
+  } catch (error) {
+    return toActionError(error, "ia.generatePredictions");
   }
-
-  const ufrByCode = new Map(ufrs.map((u) => [u.code, u.id]));
-
-  const now = new Date();
-  const predictionsData = [
-    ...affluence.forecasts.map((item) => ({
-      type: "AFFLUENCE_JOUR",
-      dateCible: new Date(`${item.date}T00:00:00.000Z`),
-      valeur: item.predicted_registrations,
-    })),
-    ...affluence.hourly_forecasts.map((hourItem) => ({
-      type: "AFFLUENCE_HEURE",
-      dateCible: new Date(`${hourItem.date}T00:00:00.000Z`),
-      heure: hourItem.heure,
-      valeur: hourItem.predicted_registrations,
-    })),
-    ...staffing.ufr_staffing.map((ufrItem) => ({
-      type: "BESOIN_AGENTS",
-      dateCible: now,
-      ufrId: ufrByCode.get(ufrItem.ufr_code) ?? null,
-      valeur: ufrItem.recommended_agents_per_day,
-    })),
-  ];
-
-  await prisma.prediction.createMany({ data: predictionsData });
-
-  revalidatePath("/admin/statistiques");
-  return {
-    ok: true,
-    message: `Prévisions IA générées (${affluence.forecasts.length} jours, granularité horaire et par UFR).`,
-  };
 }
 
 /** Analyse les inscriptions récentes et met à jour aiClass / FraudAlert (ADMIN). */
 export async function runIaAnomalyScanAction(): Promise<IaActionResult> {
   await requireRole([ROLES.ADMIN]);
 
-  const probe = await fetchAffluenceAndStaffing(1);
-  if (!probe) {
-    return {
-      ok: false,
-      message: "Service IA indisponible, réessayez.",
-    };
+  try {
+    const probe = await fetchAffluenceAndStaffing(1);
+    if (!probe) {
+      return actionError(MESSAGES.ia.unavailable);
+    }
+
+    const registrations = await prisma.registration.findMany({
+      select: { id: true },
+      take: 30,
+      orderBy: { createdAt: "desc" },
+    });
+
+    for (const reg of registrations) {
+      await triggerAnomalyAnalysis(reg.id);
+    }
+
+    revalidatePath("/admin/alertes-fraude");
+    revalidatePath("/admin/dossiers");
+    revalidatePath("/admin");
+
+    return actionOk(`Analyse IA terminée sur ${registrations.length} dossier(s).`);
+  } catch (error) {
+    return toActionError(error, "ia.runAnomalyScan");
   }
-
-  const registrations = await prisma.registration.findMany({
-    select: { id: true },
-    take: 30,
-    orderBy: { createdAt: "desc" },
-  });
-
-  for (const reg of registrations) {
-    await triggerAnomalyAnalysis(reg.id);
-  }
-
-  revalidatePath("/admin/alertes-fraude");
-  revalidatePath("/admin/dossiers");
-  revalidatePath("/admin");
-
-  return {
-    ok: true,
-    message: `Analyse IA terminée sur ${registrations.length} dossier(s).`,
-  };
 }
 
 /** Interroge le chatbot FAQ avec contexte réel côté serveur pour les questions de suivi. */

@@ -9,7 +9,7 @@ export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 Mo
 export const MAX_PDF_SIZE_BYTES = 4 * 1024 * 1024; // 4 Mo
 export const ALLOWED_UPLOAD_FORMATS = ["jpg", "png", "webp", "pdf"] as const;
 export const ALLOWED_PHOTO_FORMATS = ["jpg", "png", "webp"] as const;
-export const PHOTO_DELIVERY_TRANSFORMATION = "c_fill,g_face,w_360,h_480,f_auto,q_auto";
+export const PHOTO_DELIVERY_TRANSFORMATION = "c_thumb,g_face,z_0.75,w_360,h_480,f_auto,q_auto";
 
 export interface UploadSignatureResult {
   provider: StorageProviderName;

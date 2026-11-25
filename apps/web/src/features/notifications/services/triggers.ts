@@ -4,6 +4,7 @@ import {
   REGISTRATION_FEE_FCFA,
   REGISTRATION_STATUSES,
 } from "@smartinscription/shared";
+import { buildNotificationEmail } from "@/features/notifications/services/email-template";
 import {
   notify,
   type NotifyUserInput,
@@ -17,13 +18,23 @@ export async function notifyPaymentConfirmed(
   params: { userId: string; email: string; prenom: string; receiptNumber: string },
   notifyFn: NotifyFn = (input) => notify(input)
 ) {
+  const emailContent = buildNotificationEmail({
+    prenom: params.prenom,
+    title: `Confirmation de paiement — Reçu ${params.receiptNumber}`,
+    bodyHtml: `<p>Votre paiement de <strong>25 000 FCFA</strong> est confirmé (reçu <strong>${params.receiptNumber}</strong>).</p>`,
+    bodyText: `Votre paiement de 25 000 FCFA est confirmé (reçu ${params.receiptNumber}).`,
+    ctaLabel: "Voir mon reçu et QR code",
+    ctaHref: "/etudiant/paiement",
+  });
+
   await notifyFn({
     userId: params.userId,
     email: params.email,
     type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
     message: `Votre paiement de ${REGISTRATION_FEE_FCFA.toLocaleString("fr-FR")} FCFA est confirmé (Reçu ${params.receiptNumber}).`,
     emailSubject: `Confirmation de paiement — Reçu ${params.receiptNumber}`,
-    emailHtml: `<p>Bonjour ${params.prenom},</p><p>Votre paiement de <strong>25 000 FCFA</strong> est confirmé (reçu ${params.receiptNumber}).</p>`,
+    emailHtml: emailContent.html,
+    emailText: emailContent.text,
   });
 }
 
@@ -32,13 +43,23 @@ export async function notifyAppointmentScheduled(
   params: { userId: string; email: string; prenom: string; formattedSlot: string },
   notifyFn: NotifyFn = (input) => notify(input)
 ) {
+  const emailContent = buildNotificationEmail({
+    prenom: params.prenom,
+    title: "Confirmation de rendez-vous — SmartInscription IA",
+    bodyHtml: `<p>Votre rendez-vous est fixé au <strong>${params.formattedSlot}</strong>.</p>`,
+    bodyText: `Votre rendez-vous est fixé au ${params.formattedSlot}.`,
+    ctaLabel: "Voir mon rendez-vous",
+    ctaHref: "/etudiant/rendez-vous",
+  });
+
   await notifyFn({
     userId: params.userId,
     email: params.email,
     type: NOTIFICATION_TYPES.APPOINTMENT_CONFIRMED,
     message: `Votre rendez-vous est confirmé pour le ${params.formattedSlot}.`,
     emailSubject: "Confirmation de rendez-vous — SmartInscription IA",
-    emailHtml: `<p>Bonjour ${params.prenom},</p><p>Votre rendez-vous est fixé au <strong>${params.formattedSlot}</strong>.</p>`,
+    emailHtml: emailContent.html,
+    emailText: emailContent.text,
   });
 }
 
@@ -47,13 +68,23 @@ export async function notifyDossierIncomplete(
   params: { userId: string; email: string; prenom: string; reason: string },
   notifyFn: NotifyFn = (input) => notify(input)
 ) {
+  const emailContent = buildNotificationEmail({
+    prenom: params.prenom,
+    title: "Action requise : dossier incomplet",
+    bodyHtml: `<p>Votre dossier est incomplet : <strong>${params.reason}</strong>.</p>`,
+    bodyText: `Votre dossier est incomplet : ${params.reason}.`,
+    ctaLabel: "Corriger mes pièces",
+    ctaHref: "/etudiant/documents",
+  });
+
   await notifyFn({
     userId: params.userId,
     email: params.email,
     type: NOTIFICATION_TYPES.DOCUMENT_REJECTED,
     message: `Votre dossier est incomplet : ${params.reason}`,
     emailSubject: "Action requise : dossier incomplet",
-    emailHtml: `<p>Bonjour ${params.prenom},</p><p>Votre dossier est incomplet : <strong>${params.reason}</strong>.</p>`,
+    emailHtml: emailContent.html,
+    emailText: emailContent.text,
   });
 }
 
@@ -62,13 +93,23 @@ export async function notifyRegistrationValidated(
   params: { userId: string; email: string; prenom: string },
   notifyFn: NotifyFn = (input) => notify(input)
 ) {
+  const emailContent = buildNotificationEmail({
+    prenom: params.prenom,
+    title: "Inscription universitaire validée",
+    bodyHtml: `<p>Votre inscription universitaire est <strong>validée définitivement</strong>.</p>`,
+    bodyText: "Votre inscription universitaire est validée définitivement.",
+    ctaLabel: "Consulter mon dossier",
+    ctaHref: "/etudiant/dossier",
+  });
+
   await notifyFn({
     userId: params.userId,
     email: params.email,
     type: NOTIFICATION_TYPES.REGISTRATION_VALIDATED,
     message: "Félicitations ! Votre inscription universitaire est validée définitivement.",
     emailSubject: "Inscription universitaire validée",
-    emailHtml: `<p>Bonjour ${params.prenom},</p><p>Votre inscription universitaire est <strong>validée définitivement</strong>.</p>`,
+    emailHtml: emailContent.html,
+    emailText: emailContent.text,
   });
 }
 

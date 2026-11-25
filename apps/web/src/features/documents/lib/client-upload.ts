@@ -7,20 +7,81 @@ import {
   uploadDocumentAction,
 } from "@/features/documents/actions";
 import { compressPhotoFile } from "@/features/documents/lib/compress-image";
+import type { ActionResult } from "@/lib/action-result";
+import { MESSAGES } from "@/lib/messages";
+
+export interface UploadProgressOptions {
+  signal?: AbortSignal;
+  onProgress?: (percent: number) => void;
+}
+
+function uploadViaXhr(
+  url: string,
+  formData: FormData,
+  options: UploadProgressOptions = {}
+): Promise<{ status: number; json: { public_id?: string; error?: { message?: string } } }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      const onAbort = () => xhr.abort();
+      options.signal.addEventListener("abort", onAbort, { once: true });
+      xhr.addEventListener("loadend", () => {
+        options.signal?.removeEventListener("abort", onAbort);
+      });
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && options.onProgress) {
+        const pct = Math.min(95, Math.max(5, Math.round((event.loaded / event.total) * 90)));
+        options.onProgress(pct);
+      }
+    };
+
+    xhr.onload = () => {
+      try {
+        const json = JSON.parse(xhr.responseText || "{}") as {
+          public_id?: string;
+          error?: { message?: string };
+        };
+        resolve({ status: xhr.status, json });
+      } catch {
+        resolve({ status: xhr.status, json: {} });
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("NETWORK_ERROR"));
+    xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"));
+    xhr.send(formData);
+  });
+}
 
 /**
  * Envoie un document via le fournisseur actif (direct navigateur -> Cloudinary signé,
- * ou Server Action -> Supabase Storage). Compresse automatiquement les photos.
+ * ou Server Action -> Supabase Storage). Compresse les images et suit la progression.
  */
 export async function uploadDocumentViaActiveStorage(
   type: DocumentType,
-  rawFile: File
-): Promise<{ ok: boolean; error?: string; documentId?: string }> {
+  rawFile: File,
+  options: UploadProgressOptions = {}
+): Promise<ActionResult<{ documentId: string }>> {
+  const isPhoto = type === DOCUMENT_TYPES.PHOTO;
   const isImage = rawFile.type.startsWith("image/");
-  const file =
-    type === DOCUMENT_TYPES.PHOTO || isImage
-      ? await compressPhotoFile(rawFile)
-      : rawFile;
+
+  let file: File;
+  try {
+    file = isPhoto || isImage ? await compressPhotoFile(rawFile) : rawFile;
+  } catch {
+    return {
+      ok: false,
+      error: isPhoto ? MESSAGES.photo.unreadable : MESSAGES.documents.invalidFormat,
+    };
+  }
 
   const isPdf = file.type === "application/pdf";
   const maxAllowed = isPdf ? 4 * 1024 * 1024 : 5 * 1024 * 1024;
@@ -28,62 +89,113 @@ export async function uploadDocumentViaActiveStorage(
     return {
       ok: false,
       error: isPdf
-        ? "Le fichier PDF ne doit pas dépasser 4 Mo."
-        : "Le fichier ne doit pas dépasser 5 Mo.",
+        ? MESSAGES.documents.pdfTooLarge
+        : isPhoto
+          ? MESSAGES.photo.tooLarge
+          : MESSAGES.documents.tooLarge,
     };
   }
 
-  const prep = await prepareDocumentUploadAction(type);
-  if (!prep.ok || !prep.signature) {
-    return { ok: false, error: prep.error ?? "Impossible de préparer l'envoi." };
+  if (options.signal?.aborted) {
+    return {
+      ok: false,
+      error: isPhoto ? MESSAGES.photo.cancelled : MESSAGES.documents.cancelled,
+    };
   }
 
-  if (prep.signature.provider === "cloudinary") {
+  options.onProgress?.(10);
+
+  let prep: Awaited<ReturnType<typeof prepareDocumentUploadAction>>;
+  try {
+    prep = await prepareDocumentUploadAction(type);
+  } catch {
+    return {
+      ok: false,
+      error: isPhoto ? MESSAGES.photo.network : MESSAGES.documents.network,
+    };
+  }
+
+  if (!prep.ok || !prep.data) {
+    return {
+      ok: false,
+      error: prep.ok ? MESSAGES.generic.unexpected : prep.error,
+    };
+  }
+
+  const signature = prep.data;
+
+  if (signature.provider === "cloudinary") {
     const formData = new FormData();
-    Object.entries(prep.signature.fields).forEach(([k, v]) => {
+    Object.entries(signature.fields).forEach(([k, v]) => {
       formData.append(k, v);
     });
     formData.append("file", file);
 
     let publicId = "";
     try {
-      const uploadRes = await fetch(prep.signature.uploadUrl, {
-        method: "POST",
-        body: formData,
-      });
-      const json = (await uploadRes.json()) as {
-        public_id?: string;
-        error?: { message?: string };
-      };
-      if (!uploadRes.ok || !json.public_id) {
+      const { status, json } = await uploadViaXhr(signature.uploadUrl, formData, options);
+      if (status < 200 || status >= 300 || !json.public_id) {
         return {
           ok: false,
-          error:
-            json.error?.message ?? "Échec du téléversement direct vers Cloudinary.",
+          error: isPhoto
+            ? MESSAGES.photo.providerFailed
+            : MESSAGES.documents.providerFailed,
         };
       }
       publicId = json.public_id;
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return {
+          ok: false,
+          error: isPhoto ? MESSAGES.photo.cancelled : MESSAGES.documents.cancelled,
+        };
+      }
       return {
         ok: false,
-        error: "Erreur réseau lors du téléversement vers Cloudinary.",
+        error: isPhoto ? MESSAGES.photo.network : MESSAGES.documents.network,
       };
     }
 
-    const confirmed = await confirmCloudinaryUploadAction({ type, publicId });
-    if (confirmed.error) {
-      return { ok: false, error: confirmed.error };
+    options.onProgress?.(96);
+    try {
+      const confirmed = await confirmCloudinaryUploadAction({ type, publicId });
+      if (!confirmed.ok) {
+        return { ok: false, error: confirmed.error };
+      }
+      options.onProgress?.(100);
+      return {
+        ok: true,
+        message: isPhoto ? MESSAGES.photo.success : MESSAGES.documents.uploadSuccess,
+        data: confirmed.data,
+      };
+    } catch {
+      return {
+        ok: false,
+        error: isPhoto ? MESSAGES.photo.network : MESSAGES.documents.network,
+      };
     }
-    return { ok: true, documentId: confirmed.documentId };
   }
 
   // Mode Supabase Storage
+  options.onProgress?.(40);
   const formData = new FormData();
   formData.append("type", type);
   formData.append("file", file);
-  const res = await uploadDocumentAction({}, formData);
-  if (res.error) {
-    return { ok: false, error: res.error };
+  try {
+    const res = await uploadDocumentAction(null, formData);
+    if (!res.ok) {
+      return { ok: false, error: res.error };
+    }
+    options.onProgress?.(100);
+    return {
+      ok: true,
+      message: isPhoto ? MESSAGES.photo.success : MESSAGES.documents.uploadSuccess,
+      data: res.data,
+    };
+  } catch {
+    return {
+      ok: false,
+      error: isPhoto ? MESSAGES.photo.network : MESSAGES.documents.network,
+    };
   }
-  return { ok: true, documentId: res.documentId };
 }

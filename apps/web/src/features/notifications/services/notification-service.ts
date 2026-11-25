@@ -8,6 +8,7 @@ export interface NotifyUserInput {
   message: string;
   emailSubject: string;
   emailHtml: string;
+  emailText?: string;
 }
 
 /**
@@ -38,7 +39,7 @@ export async function notifyUser(
       to: input.email,
       subject: input.emailSubject,
       html: input.emailHtml,
-      text: input.message,
+      text: input.emailText ?? input.message,
     });
   } catch (error) {
     console.warn("[notification] Erreur non bloquante lors de l'envoi d'e-mail:", error);

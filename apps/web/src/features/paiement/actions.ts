@@ -8,10 +8,11 @@ import { POST as webhookPostHandler } from "@/app/api/paiement/webhook/route";
 import { requireRole } from "@/features/auth/lib/session";
 import { signMockWebhookPayload } from "@/features/paiement/providers/mock-provider";
 import { initiateStudentPayment } from "@/features/paiement/services/payment-service";
+import { actionValidationError, type ActionResult } from "@/lib/action-result";
+import { toActionError } from "@/lib/app-error";
+import { MESSAGES } from "@/lib/messages";
 
-export interface PaymentActionState {
-  error?: string;
-}
+export type PaymentActionState = ActionResult;
 
 const paymentMethodValues = Object.values(PAYMENT_METHODS) as [
   PaymentMethod,
@@ -20,13 +21,13 @@ const paymentMethodValues = Object.values(PAYMENT_METHODS) as [
 
 const startPaymentSchema = z.object({
   moyen: z.enum(paymentMethodValues, {
-    message: "Veuillez sélectionner un moyen de paiement valide.",
+    message: MESSAGES.generic.formInvalid,
   }),
 });
 
 /** Lance le paiement des 25 000 FCFA et redirige vers l'écran du fournisseur. */
 export async function startPaymentAction(
-  _prevState: PaymentActionState,
+  _prevState: PaymentActionState | null,
   formData: FormData
 ): Promise<PaymentActionState> {
   const user = await requireRole([ROLES.STUDENT]);
@@ -36,9 +37,7 @@ export async function startPaymentAction(
   });
 
   if (!parsed.success) {
-    return {
-      error: parsed.error.issues[0]?.message ?? "Moyen de paiement invalide.",
-    };
+    return actionValidationError(parsed.error);
   }
 
   let checkoutUrl = "";
@@ -49,12 +48,7 @@ export async function startPaymentAction(
     });
     checkoutUrl = checkout.checkoutUrl;
   } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Impossible d'initialiser le paiement.",
-    };
+    return toActionError(error, "payment.start");
   }
 
   revalidatePath("/etudiant");

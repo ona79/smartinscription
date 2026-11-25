@@ -13,24 +13,28 @@ import {
   uploadStudentDocument,
 } from "@/features/documents/services/document-service";
 import type { UploadSignatureResult } from "@/features/documents/services/storage-provider";
+import {
+  actionError,
+  actionOk,
+  actionValidationError,
+  type ActionResult,
+} from "@/lib/action-result";
+import { toActionError } from "@/lib/app-error";
+import { MESSAGES } from "@/lib/messages";
 
-export interface DocumentActionState {
-  error?: string;
-  success?: string;
-  documentId?: string;
-}
+export type DocumentActionState = ActionResult<{ documentId?: string }>;
 
 const docTypeValues = Object.values(DOCUMENT_TYPES) as [DocumentType, ...DocumentType[]];
 
 const uploadMetaSchema = z.object({
   type: z.enum(docTypeValues, {
-    message: "Type de document invalide.",
+    message: MESSAGES.documents.invalidFormat,
   }),
 });
 
 const confirmCloudinarySchema = z.object({
-  type: z.enum(docTypeValues, { message: "Type de document invalide." }),
-  publicId: z.string().trim().min(1, "Identifiant Cloudinary manquant."),
+  type: z.enum(docTypeValues, { message: MESSAGES.documents.invalidFormat }),
+  publicId: z.string().trim().min(1, MESSAGES.documents.verificationFailed),
 });
 
 function revalidateDocumentViews() {
@@ -42,15 +46,13 @@ function revalidateDocumentViews() {
 }
 
 /** Action étudiant : génère une signature Cloudinary imposée (ou confirme le mode Supabase). */
-export async function prepareDocumentUploadAction(type: DocumentType): Promise<{
-  ok: boolean;
-  error?: string;
-  signature?: UploadSignatureResult;
-}> {
+export async function prepareDocumentUploadAction(
+  type: DocumentType
+): Promise<ActionResult<UploadSignatureResult>> {
   const user = await requireRole([ROLES.STUDENT]);
   const parsed = uploadMetaSchema.safeParse({ type });
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Type invalide." };
+    return actionValidationError(parsed.error);
   }
 
   try {
@@ -58,15 +60,9 @@ export async function prepareDocumentUploadAction(type: DocumentType): Promise<{
       userId: user.id,
       type: parsed.data.type,
     });
-    return { ok: true, signature };
+    return actionOk(undefined, signature);
   } catch (error) {
-    return {
-      ok: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Impossible d'initialiser le téléversement.",
-    };
+    return toActionError(error, "documents.prepareUpload");
   }
 }
 
@@ -74,11 +70,11 @@ export async function prepareDocumentUploadAction(type: DocumentType): Promise<{
 export async function confirmCloudinaryUploadAction(input: {
   type: DocumentType;
   publicId: string;
-}): Promise<DocumentActionState> {
+}): Promise<ActionResult<{ documentId: string }>> {
   const user = await requireRole([ROLES.STUDENT]);
   const parsed = confirmCloudinarySchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Paramètres invalides." };
+    return actionValidationError(parsed.error);
   }
 
   try {
@@ -88,22 +84,21 @@ export async function confirmCloudinaryUploadAction(input: {
       publicId: parsed.data.publicId,
     });
     revalidateDocumentViews();
-    return { success: "Document enregistré avec succès.", documentId };
+    const message =
+      parsed.data.type === DOCUMENT_TYPES.PHOTO
+        ? MESSAGES.photo.success
+        : MESSAGES.documents.uploadSuccess;
+    return actionOk(message, { documentId });
   } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Échec de vérification du fichier sur Cloudinary.",
-    };
+    return toActionError(error, "documents.confirmCloudinary");
   }
 }
 
 /** Action étudiant : téléverse une pièce justificative (mode Supabase). */
 export async function uploadDocumentAction(
-  _prevState: DocumentActionState,
+  _prevState: ActionResult<{ documentId: string }> | null,
   formData: FormData
-): Promise<DocumentActionState> {
+): Promise<ActionResult<{ documentId: string }>> {
   const user = await requireRole([ROLES.STUDENT]);
 
   const parsed = uploadMetaSchema.safeParse({
@@ -111,12 +106,12 @@ export async function uploadDocumentAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Type invalide." };
+    return actionValidationError(parsed.error);
   }
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { error: "Veuillez sélectionner un fichier à téléverser." };
+    return actionError(MESSAGES.documents.empty);
   }
 
   try {
@@ -126,41 +121,39 @@ export async function uploadDocumentAction(
       file,
     });
     revalidateDocumentViews();
-    return { success: "Document téléversé avec succès.", documentId };
+    const message =
+      parsed.data.type === DOCUMENT_TYPES.PHOTO
+        ? MESSAGES.photo.success
+        : MESSAGES.documents.uploadSuccess;
+    return actionOk(message, { documentId });
   } catch (error) {
-    return {
-      error:
-        error instanceof Error ? error.message : "Erreur lors du téléversement.",
-    };
+    return toActionError(error, "documents.upload");
   }
 }
 
 /** Action étudiant : supprime une pièce justificative avant validation. */
 export async function deleteDocumentAction(
   documentId: string
-): Promise<DocumentActionState> {
+): Promise<ActionResult> {
   const user = await requireRole([ROLES.STUDENT]);
   if (!documentId) {
-    return { error: "Identifiant de document manquant." };
+    return actionError(MESSAGES.documents.notFound);
   }
 
   try {
     await deleteStudentDocument({ userId: user.id, documentId });
     revalidateDocumentViews();
-    return { success: "Pièce supprimée." };
+    return actionOk(MESSAGES.documents.deleteSuccess);
   } catch (error) {
-    return {
-      error:
-        error instanceof Error ? error.message : "Impossible de supprimer la pièce.",
-    };
+    return toActionError(error, "documents.delete");
   }
 }
 
 /** Action agent/admin : approuve ou rejette un document. */
 export async function reviewDocumentAction(
-  _prevState: DocumentActionState,
+  _prevState: ActionResult | null,
   formData: FormData
-): Promise<DocumentActionState> {
+): Promise<ActionResult> {
   const user = await requireRole([ROLES.AGENT, ROLES.ADMIN]);
 
   const documentId = String(formData.get("documentId") ?? "");
@@ -176,34 +169,42 @@ export async function reviewDocumentAction(
       reviewerRole: user.role,
     });
   } catch (error) {
-    return {
-      error:
-        error instanceof Error ? error.message : "Erreur lors de la vérification.",
-    };
+    return toActionError(error, "documents.review");
   }
 
   revalidatePath(`/agent/dossiers/${registrationId}`);
   revalidateDocumentViews();
-  return {
-    success:
-      decision === "APPROVED" ? "Document approuvé." : "Document rejeté.",
-  };
+  return actionOk(
+    decision === "APPROVED" ? MESSAGES.documents.approved : MESSAGES.documents.rejected
+  );
 }
 
 /** Action agent/admin : valide ou rejette définitivement une inscription. */
-export async function finalizeRegistrationAction(formData: FormData): Promise<void> {
+export async function finalizeRegistrationAction(
+  _prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const user = await requireRole([ROLES.AGENT, ROLES.ADMIN]);
 
   const registrationId = String(formData.get("registrationId") ?? "");
   const decision = formData.get("decision") === "VALIDATED" ? "VALIDATED" : "REJECTED";
 
-  await finalizeRegistration({
-    registrationId,
-    decision,
-    reviewerRole: user.role,
-  });
+  try {
+    await finalizeRegistration({
+      registrationId,
+      decision,
+      reviewerRole: user.role,
+    });
+  } catch (error) {
+    return toActionError(error, "documents.finalize");
+  }
 
   revalidatePath(`/agent/dossiers/${registrationId}`);
   revalidateDocumentViews();
   revalidatePath("/admin");
+  return actionOk(
+    decision === "VALIDATED"
+      ? MESSAGES.documents.registrationValidated
+      : MESSAGES.documents.registrationRejected
+  );
 }

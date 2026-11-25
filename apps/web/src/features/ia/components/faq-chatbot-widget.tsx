@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Loader2, MessageCircle, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { askFaqChatbotAction } from "@/features/ia/actions";
+import { MESSAGES } from "@/lib/messages";
 import { cn } from "@/lib/utils";
 
 interface ChatMessage {
@@ -18,7 +19,12 @@ const SUGGESTIONS = [
   "Comment prendre rendez-vous ?",
 ];
 
-/** Widget flottant de chatbot FAQ pour accompagner les étudiants. */
+/**
+ * Widget FAQ :
+ * - sur mobile (< 768 px) : aucun bouton flottant (ouvert depuis l'icône d'aide de l'en-tête)
+ *   et panneau en feuille plein écran compatible clavier ;
+ * - sur desktop (≥ 768 px) : bouton flottant en bas à droite.
+ */
 export function FaqChatbotWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -30,6 +36,14 @@ export function FaqChatbotWidget() {
     },
   ]);
 
+  useEffect(() => {
+    function handleOpenEvent() {
+      setOpen(true);
+    }
+    window.addEventListener("smartinscription:open-faq", handleOpenEvent);
+    return () => window.removeEventListener("smartinscription:open-faq", handleOpenEvent);
+  }, []);
+
   function sendQuestion(question: string) {
     const trimmed = question.trim();
     if (!trimmed || isPending) return;
@@ -38,16 +52,27 @@ export function FaqChatbotWidget() {
     setInput("");
 
     startTransition(async () => {
-      const response = await askFaqChatbotAction(trimmed);
-      setMessages((prev) => [...prev, { role: "bot", text: response.answer }]);
+      try {
+        const response = await askFaqChatbotAction(trimmed);
+        setMessages((prev) => [
+          ...prev,
+          { role: "bot", text: response.answer ?? MESSAGES.ia.unavailable },
+        ]);
+      } catch {
+        setMessages((prev) => [...prev, { role: "bot", text: MESSAGES.ia.unavailable }]);
+      }
     });
   }
 
   return (
-    <div className="fixed right-4 bottom-20 z-40 md:right-6 md:bottom-6">
-      {open ? (
-        <div className="flex h-[420px] w-[340px] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-lg sm:w-[370px]">
-          <div className="flex items-center justify-between bg-brand px-4 py-3 text-brand-foreground">
+    <>
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Assistant FAQ"
+          className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden bg-surface pb-[env(safe-area-inset-bottom)] md:inset-auto md:right-6 md:bottom-6 md:h-[440px] md:w-[370px] md:rounded-2xl md:border md:border-border md:pb-0 md:shadow-lg"
+        >
+          <div className="flex h-[52px] shrink-0 items-center justify-between bg-brand px-4 text-brand-foreground md:h-auto md:py-3">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4" />
               <span className="text-sm font-semibold">Assistant FAQ</span>
@@ -56,18 +81,18 @@ export function FaqChatbotWidget() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Fermer l'assistant"
-              className="rounded-lg p-1 hover:bg-white/15"
+              className="inline-flex size-10 items-center justify-center rounded-lg hover:bg-white/15 md:size-8"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 text-sm">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={cn(
-                  "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed",
+                  "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed md:text-xs",
                   msg.role === "user"
                     ? "ml-auto bg-brand text-brand-foreground"
                     : "bg-muted text-foreground"
@@ -84,13 +109,13 @@ export function FaqChatbotWidget() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 border-t border-border/60 px-3 py-2">
+          <div className="flex shrink-0 flex-wrap gap-1.5 border-t border-border/60 px-3 py-2">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => sendQuestion(s)}
-                className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-medium text-accent-foreground hover:bg-accent/80"
+                className="min-h-9 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground hover:bg-accent/80 md:min-h-0 md:px-2.5 md:text-[11px]"
               >
                 {s}
               </button>
@@ -102,39 +127,42 @@ export function FaqChatbotWidget() {
               e.preventDefault();
               sendQuestion(input);
             }}
-            className="flex items-center gap-2 border-t border-border p-3"
+            className="flex shrink-0 items-center gap-2 border-t border-border p-3"
           >
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Posez votre question..."
-              className="h-9 rounded-xl text-xs"
+              className="rounded-xl"
             />
             <Button
               type="submit"
               size="icon"
               disabled={isPending || !input.trim()}
               aria-label="Envoyer"
-              className="h-9 w-9 shrink-0 rounded-xl bg-brand text-brand-foreground hover:bg-brand-dark"
+              className="shrink-0 rounded-xl bg-brand text-brand-foreground hover:bg-brand-dark"
             >
               <Send className="h-4 w-4" />
             </Button>
           </form>
         </div>
-      ) : (
-        <Button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Aide FAQ"
-          title="Aide FAQ"
-          className="group h-12 w-12 rounded-full bg-brand p-0 text-sm font-medium text-brand-foreground shadow-md transition-all hover:w-auto hover:px-4 lg:w-auto lg:px-4 hover:bg-brand-dark"
-        >
-          <MessageCircle className="h-5 w-5 shrink-0" />
-          <span className="hidden group-hover:ml-2 group-hover:inline lg:ml-2 lg:inline">
-            Aide FAQ
-          </span>
-        </Button>
       )}
-    </div>
+
+      {/* Bouton flottant uniquement sur écrans larges (desktop) */}
+      {!open && (
+        <div className="fixed right-6 bottom-6 z-40 hidden md:block">
+          <Button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Aide FAQ"
+            title="Aide FAQ"
+            className="group h-11 rounded-full bg-brand px-4 text-sm font-medium text-brand-foreground shadow-md transition-all hover:bg-brand-dark"
+          >
+            <MessageCircle className="h-4 w-4 shrink-0" />
+            <span className="ml-2">Aide FAQ</span>
+          </Button>
+        </div>
+      )}
+    </>
   );
 }
