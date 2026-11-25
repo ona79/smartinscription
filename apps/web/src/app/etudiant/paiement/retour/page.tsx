@@ -10,16 +10,18 @@ import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireRole } from "@/features/auth/lib/session";
+import { PaymentReturnToast } from "@/features/paiement/components/payment-return-toast";
+import { MESSAGES } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 interface ReturnPageProps {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; status?: string }>;
 }
 
 export default async function PaymentReturnPage({ searchParams }: ReturnPageProps) {
   const user = await requireRole([ROLES.STUDENT]);
-  const { ref } = await searchParams;
+  const { ref, status } = await searchParams;
 
   if (!ref) {
     redirect("/etudiant/paiement");
@@ -39,55 +41,69 @@ export default async function PaymentReturnPage({ searchParams }: ReturnPageProp
   }
 
   const isSuccess = payment.statut === PAYMENT_STATUSES.SUCCESS;
-  const isFailed = payment.statut === PAYMENT_STATUSES.FAILED;
+  const isCancelled = !isSuccess && status === "cancelled";
+  const isFailed = !isCancelled && payment.statut === PAYMENT_STATUSES.FAILED;
+  const outcome: "success" | "failed" | "cancelled" | "pending" = isSuccess
+    ? "success"
+    : isCancelled
+      ? "cancelled"
+      : isFailed
+        ? "failed"
+        : "pending";
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-5">
+      <PaymentReturnToast status={outcome} />
+
       <PageHeader
         title="Résultat du paiement"
         description={`Référence de transaction : ${payment.providerRef}`}
       />
 
-      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-        <CardContent className="flex flex-col items-center space-y-4 p-8 text-center">
+      <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardContent className="flex flex-col items-center space-y-4 p-5 text-center sm:p-8">
           {isSuccess ? (
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-success/10 text-success">
-              <CheckCircle2 className="h-8 w-8" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10 text-success">
+              <CheckCircle2 className="h-7 w-7" />
             </div>
-          ) : isFailed ? (
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-              <XCircle className="h-8 w-8" />
+          ) : isFailed || isCancelled ? (
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+              <XCircle className="h-7 w-7" />
             </div>
           ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
-              <Clock className="h-8 w-8" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+              <Clock className="h-7 w-7" />
             </div>
           )}
 
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-foreground">
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-semibold text-foreground sm:text-xl">
               {isSuccess
                 ? "Paiement réussi"
-                : isFailed
-                  ? "Paiement échoué"
-                  : "Paiement en attente de confirmation"}
+                : isCancelled
+                  ? "Paiement annulé"
+                  : isFailed
+                    ? "Paiement échoué"
+                    : "Paiement en attente de confirmation"}
             </h2>
             <p className="text-sm text-muted-foreground">
               {isSuccess
                 ? `Vos frais d'inscription de ${REGISTRATION_FEE_FCFA.toLocaleString("fr-FR")} FCFA ont bien été validés.`
-                : isFailed
-                  ? "La transaction n'a pas abouti. Vous pouvez réessayer avec le même ou un autre moyen de paiement."
-                  : "Nous attendons la confirmation du fournisseur de paiement. Actualisez dans quelques instants."}
+                : isCancelled
+                  ? MESSAGES.payment.cancelled
+                  : isFailed
+                    ? MESSAGES.payment.failed
+                    : MESSAGES.payment.pending}
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 pt-2">
-            {isFailed && (
+          <div className="flex w-full flex-col gap-2.5 pt-2 sm:w-auto sm:flex-row sm:justify-center">
+            {(isFailed || isCancelled) && (
               <Link
                 href="/etudiant/paiement"
                 className={cn(
                   buttonVariants({ size: "default" }),
-                  "h-10 rounded-xl bg-brand px-5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                  "w-full rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark sm:w-auto"
                 )}
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
@@ -97,9 +113,11 @@ export default async function PaymentReturnPage({ searchParams }: ReturnPageProp
             <Link
               href={isSuccess ? "/etudiant/paiement" : "/etudiant"}
               className={cn(
-                buttonVariants({ variant: isFailed ? "outline" : "default" }),
-                "h-10 rounded-xl px-5 text-sm font-semibold",
-                !isFailed && "bg-brand text-brand-foreground hover:bg-brand-dark"
+                buttonVariants({
+                  variant: isFailed || isCancelled ? "outline" : "default",
+                }),
+                "w-full rounded-lg px-5 text-sm font-semibold sm:w-auto",
+                !isFailed && !isCancelled && "bg-brand text-brand-foreground hover:bg-brand-dark"
               )}
             >
               {isSuccess ? "Voir mon reçu" : "Retour au tableau de bord"}

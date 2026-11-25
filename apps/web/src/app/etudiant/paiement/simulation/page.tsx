@@ -46,12 +46,12 @@ export default async function MockSimulationPage({ searchParams }: SimulationPag
         description="Environnement de simulation MockProvider : choisissez l'issue du paiement pour déclencher le webhook."
       />
 
-      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-        <CardContent className="space-y-6 p-6">
-          <div className="space-y-2 rounded-xl bg-muted/50 p-4 text-sm">
-            <div className="flex justify-between">
+      <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardContent className="space-y-5 p-4 sm:p-6">
+          <div className="space-y-2 rounded-xl bg-muted/50 p-3.5 text-sm sm:p-4">
+            <div className="flex flex-wrap justify-between gap-2">
               <span className="text-muted-foreground">Référence</span>
-              <span className="font-mono font-semibold">{payment.providerRef}</span>
+              <span className="break-all font-mono font-semibold">{payment.providerRef}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Moyen</span>
