@@ -32,41 +32,46 @@ export function BirthInfoEditForm({
   );
 
   return (
-    <form action={formAction} className="space-y-3">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <form action={formAction} className="space-y-2.5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 [&>*]:min-w-0">
         <FormField
           id="edit-birthDate"
           name="birthDate"
           type="date"
-          label="Date de naissance"
+          label="Date naissance"
           defaultValue={toDateInputValue(birthDate)}
           disabled={disabled || isPending}
           required
           error={fieldErrors.birthDate}
-          icon={<Calendar className="h-4 w-4" />}
+          className="h-9 text-sm sm:h-8"
+          icon={<Calendar className="h-3.5 w-3.5" />}
         />
         <FormField
           id="edit-birthPlace"
           name="birthPlace"
-          label="Lieu de naissance"
+          label="Lieu naissance"
           defaultValue={birthPlace ?? ""}
-          placeholder="Ex : Ziguinchor"
+          placeholder="Ziguinchor"
           disabled={disabled || isPending}
           required
           error={fieldErrors.birthPlace}
-          icon={<MapPin className="h-4 w-4" />}
+          className="h-9 text-sm sm:h-8"
+          icon={<MapPin className="h-3.5 w-3.5" />}
         />
-        <FormField
-          id="edit-nationality"
-          name="nationality"
-          label="Nationalité"
-          defaultValue={nationality ?? ""}
-          placeholder="Ex : Sénégalaise"
-          disabled={disabled || isPending}
-          required
-          error={fieldErrors.nationality}
-          icon={<Globe className="h-4 w-4" />}
-        />
+        <div className="col-span-2 sm:col-span-1">
+          <FormField
+            id="edit-nationality"
+            name="nationality"
+            label="Nationalité"
+            defaultValue={nationality ?? ""}
+            placeholder="Sénégalaise"
+            disabled={disabled || isPending}
+            required
+            error={fieldErrors.nationality}
+            className="h-9 text-sm sm:h-8"
+            icon={<Globe className="h-3.5 w-3.5" />}
+          />
+        </div>
       </div>
 
       {!disabled && (
@@ -75,7 +80,7 @@ export function BirthInfoEditForm({
           variant="outline"
           size="sm"
           disabled={isPending}
-          className="w-full rounded-lg text-[13px] sm:w-auto"
+          className="h-8 w-full rounded-lg text-xs sm:w-auto"
         >
           {isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
           Mettre à jour mes informations

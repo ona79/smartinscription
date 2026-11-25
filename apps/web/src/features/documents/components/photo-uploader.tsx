@@ -131,7 +131,6 @@ export function PhotoUploader({
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        capture="user"
         disabled={disabled || isUploading}
         onChange={handleFileChange}
         className="sr-only"

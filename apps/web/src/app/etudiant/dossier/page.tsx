@@ -105,65 +105,60 @@ export default async function StudentDossierPage() {
           </section>
 
           {/* Informations du dossier + Photo d'identité à droite sur grand écran */}
-          <div className="space-y-4 lg:col-span-7">
+          <div className="space-y-3 lg:col-span-7">
             <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
-              <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
-                <CardTitle className="text-base font-semibold">
-                  Informations académiques & état civil
+              <CardHeader className="px-3.5 pt-3 pb-1.5 sm:px-4 sm:pt-3.5">
+                <CardTitle className="text-sm font-semibold sm:text-base">
+                  Informations académiques &amp; état civil
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 p-4 pt-2 sm:space-y-5 sm:p-5 sm:pt-2">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+              <CardContent className="space-y-3 px-3.5 pt-1 pb-3.5 sm:px-4 sm:pb-4">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 [&>*]:min-w-0">
                   <div>
-                    <p className="text-xs text-muted-foreground">Nom complet</p>
-                    <p className="mt-0.5 text-sm font-medium text-foreground">
+                    <p className="text-[11px] text-muted-foreground">Nom complet</p>
+                    <p className="truncate text-xs font-medium text-foreground sm:text-sm">
                       {user.prenom} {user.nom}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Numéro étudiant</p>
-                    <p className="mt-0.5 font-mono text-sm font-medium text-foreground">
+                    <p className="text-[11px] text-muted-foreground">N° étudiant</p>
+                    <p className="truncate font-mono text-xs font-medium text-foreground sm:text-sm">
                       {student.numeroEtudiant}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">UFR</p>
-                    <p className="mt-0.5 text-sm font-medium text-foreground">
+                    <p className="text-[11px] text-muted-foreground">Niveau / Année</p>
+                    <p className="truncate text-xs font-medium text-foreground sm:text-sm">
+                      {ACADEMIC_LEVEL_LABELS_FR[student.niveau as AcademicLevel] ??
+                        student.niveau}{" "}
+                      · {registration.anneeAcademique}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">UFR</p>
+                    <p className="truncate text-xs font-medium text-foreground sm:text-sm" title={`${student.ufr.code} — ${student.ufr.nom}`}>
                       {student.ufr.code} — {student.ufr.nom}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Filière</p>
-                    <p className="mt-0.5 text-sm font-medium text-foreground">
+                    <p className="text-[11px] text-muted-foreground">Filière</p>
+                    <p className="truncate text-xs font-medium text-foreground sm:text-sm" title={student.filiere.nom}>
                       {student.filiere.nom}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Niveau</p>
-                    <p className="mt-0.5 text-sm font-medium text-foreground">
-                      {ACADEMIC_LEVEL_LABELS_FR[student.niveau as AcademicLevel] ??
-                        student.niveau}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Année académique</p>
-                    <p className="mt-0.5 text-sm font-medium text-foreground">
-                      {registration.anneeAcademique}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Accès BU</p>
-                    <p className="mt-0.5 text-sm font-medium text-foreground">
+                    <p className="text-[11px] text-muted-foreground">Accès BU</p>
+                    <p className="truncate text-xs font-medium text-foreground sm:text-sm">
                       {registration.buStatus === "ACTIVE"
                         ? registration.buValidatedAt
-                          ? `Active depuis le ${new Date(registration.buValidatedAt).toLocaleDateString("fr-FR")}`
+                          ? `Active (${new Date(registration.buValidatedAt).toLocaleDateString("fr-FR")})`
                           : "Active"
                         : "Non activé"}
                     </p>
                   </div>
                 </div>
 
-                <div className="border-t border-border pt-4">
+                <div className="border-t border-border pt-2.5">
                   <BirthInfoEditForm
                     birthDate={student.birthDate}
                     birthPlace={student.birthPlace}
@@ -176,33 +171,33 @@ export default async function StudentDossierPage() {
 
             {/* Bloc Photo d'identité */}
             <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
-              <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
-                <CardTitle className="text-base font-semibold">
+              <CardHeader className="px-3.5 pt-3 pb-1 sm:px-4 sm:pt-3.5">
+                <CardTitle className="text-sm font-semibold sm:text-base">
                   Photo d&apos;identité
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 p-4 pt-2 sm:p-5 sm:pt-2">
-                <p className="text-[13px] text-muted-foreground">
-                  Conseils : visage dégagé, fond uni, cadrage portrait. Cette photo est la même que celle de la pièce justificative « Photo d&apos;identité ».
+              <CardContent className="space-y-2 px-3.5 pt-1 pb-3.5 sm:px-4 sm:pb-4">
+                <p className="text-xs text-muted-foreground">
+                  Visage dégagé, fond uni, cadrage portrait. Synchronisée avec la pièce « Photo d&apos;identité ».
                 </p>
 
                 {photoDoc?.verificationStatus === "REJECTED" && photoDoc.motif && (
-                  <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                  <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
                     <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>Photo rejetée : {photoDoc.motif}</span>
                   </div>
                 )}
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex items-center gap-3">
                   {photoUrl && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={photoUrl}
                       alt="Photo d'identité actuelle"
-                      className="h-24 w-[72px] shrink-0 self-center rounded-lg border border-border object-cover sm:self-auto"
+                      className="h-16 w-12 shrink-0 rounded-lg border border-border object-cover"
                     />
                   )}
-                  <div className="w-full min-w-0 flex-1">
+                  <div className="min-w-0 flex-1">
                     <PhotoUploader
                       mode="immediate"
                       fullWidthMobile
