@@ -163,7 +163,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
       )}
 
       {/* Ligne 1 : N° étudiant + Niveau */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
         <FormField
           id="numeroEtudiant"
           name="numeroEtudiant"
@@ -171,7 +171,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           placeholder="SN-2026-0042"
           required
           error={fieldErrors.numeroEtudiant}
-          className="h-10 sm:h-8"
+          className="h-9 text-sm sm:h-8"
           icon={<Hash className="h-3.5 w-3.5" />}
         />
 
@@ -184,7 +184,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             name="niveau"
             required
             defaultValue="L1"
-            className="flex h-10 w-full rounded-lg border border-input bg-surface px-2 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-8 sm:text-xs"
+            className="flex h-9 w-full rounded-lg border border-input bg-surface px-2 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-8 sm:text-xs"
           >
             {ACADEMIC_LEVELS.map((level) => (
               <option key={level} value={level}>
@@ -196,7 +196,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
       </div>
 
       {/* Ligne 2 : UFR + Filière */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
         <div className="space-y-1.5">
           <Label htmlFor="ufrId" className="text-[13px] font-medium text-foreground">
             UFR
@@ -207,7 +207,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             required
             value={selectedUfrId}
             onChange={(e) => setSelectedUfrId(e.target.value)}
-            className="flex h-10 w-full rounded-lg border border-input bg-surface px-2 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-8 sm:text-xs"
+            className="flex h-9 w-full rounded-lg border border-input bg-surface px-2 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-8 sm:text-xs"
           >
             <option value="" disabled>
               UFR...
@@ -231,7 +231,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             required
             defaultValue={filieres[0]?.id ?? ""}
             disabled={filieres.length === 0}
-            className="flex h-10 w-full rounded-lg border border-input bg-surface px-2 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 sm:h-8 sm:text-xs"
+            className="flex h-9 w-full rounded-lg border border-input bg-surface px-2 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 sm:h-8 sm:text-xs"
           >
             <option value="" disabled>
               Filière...
@@ -249,7 +249,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
       </div>
 
       {/* Ligne 3 : Date + Lieu de naissance */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
         <FormField
           id="birthDate"
           name="birthDate"
@@ -257,7 +257,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           label="Date naissance"
           required
           error={fieldErrors.birthDate}
-          className="h-10 sm:h-8"
+          className="h-9 text-sm sm:h-8"
           icon={<Calendar className="h-3.5 w-3.5" />}
         />
         <FormField
@@ -267,13 +267,13 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           placeholder="Ziguinchor"
           required
           error={fieldErrors.birthPlace}
-          className="h-10 sm:h-8"
+          className="h-9 text-sm sm:h-8"
           icon={<MapPin className="h-3.5 w-3.5" />}
         />
       </div>
 
       {/* Ligne 4 : Nationalité + Photo optionnelle */}
-      <div className="grid grid-cols-2 items-end gap-2">
+      <div className="grid grid-cols-2 items-end gap-2 [&>*]:min-w-0">
         <FormField
           id="nationality"
           name="nationality"
@@ -282,7 +282,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           defaultValue="Sénégalaise"
           required
           error={fieldErrors.nationality}
-          className="h-10 sm:h-8"
+          className="h-9 text-sm sm:h-8"
           icon={<Globe className="h-3.5 w-3.5" />}
         />
 
