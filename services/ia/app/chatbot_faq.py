@@ -1,82 +1,79 @@
+from __future__ import annotations
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+CONFIDENCE_THRESHOLD = 0.12
+
 FAQ_ENTRIES: list[dict[str, str]] = [
     {
-        "topic": "Frais d'inscription",
-        "question": "Quel est le montant des frais d'inscription universitaire ?",
+        "theme": "inscription",
+        "topic": "Inscription universitaire",
+        "question": "Comment m'inscrire, créer mon compte et compléter mon dossier étudiant ?",
         "answer": (
-            "Les frais d'inscription s'élèvent à 25 000 FCFA par année académique "
-            "(2026-2027). Le paiement s'effectue directement depuis votre espace étudiant."
+            "Créez votre compte sur /inscription, puis complétez votre profil académique "
+            "(numéro étudiant, UFR, filière et niveau L1 à M2) dans « Mon dossier »."
         ),
     },
     {
-        "topic": "Moyens de paiement",
-        "question": "Quels moyens de paiement sont acceptés (Wave, Orange Money, Free, Wizall, carte) ?",
-        "answer": (
-            "Vous pouvez régler les 25 000 FCFA via Orange Money, Wave, Free Money, "
-            "Wizall ou par carte bancaire depuis l'onglet « Paiement »."
-        ),
-    },
-    {
-        "topic": "Pièces justificatives",
-        "question": "Quels documents et pièces justificatives dois-je déposer ?",
+        "theme": "pieces_requises",
+        "topic": "Pièces requises",
+        "question": "Quelles pièces justificatives et documents dois-je déposer ?",
         "answer": (
             "Après le paiement, déposez 4 pièces dans « Documents » (PDF, JPG, PNG ou WEBP, max 5 Mo) : "
             "pièce d'identité, relevé de notes, diplôme ou attestation, et photo d'identité."
         ),
     },
     {
-        "topic": "Reçu numérique et QR code",
-        "question": "Comment obtenir et télécharger mon reçu PDF avec QR code ?",
+        "theme": "orientation",
+        "topic": "Orientation et dépôt du dossier",
+        "question": "Où déposer mon dossier physique, quelle UFR choisir et comment prendre rendez-vous ?",
         "answer": (
-            "Dès que votre paiement est confirmé, votre reçu officiel et son QR code "
-            "apparaissent dans « Paiement ». Vous pouvez le télécharger au format PDF."
+            "Votre dossier numérique se dépose en ligne par UFR (ST, SEG, LSH, SJP). "
+            "Pour le dépôt des originaux, réservez un créneau dans « Rendez-vous » et présentez-vous "
+            "à la scolarité de votre UFR muni de votre QR code."
         ),
     },
     {
-        "topic": "Rendez-vous",
-        "question": "Comment prendre un rendez-vous pour la validation physique ?",
+        "theme": "suivi_financier",
+        "topic": "Suivi financier et paiement",
+        "question": "Quel est le montant des frais, quels moyens de paiement et comment obtenir mon reçu ?",
         "answer": (
-            "Une fois les frais réglés, ouvrez l'onglet « Rendez-vous » pour choisir "
-            "un créneau de 30 minutes (jours ouvrés). Présentez-vous avec votre QR code et vos originaux."
+            "Les frais s'élèvent à 25 000 FCFA (Orange Money, Wave, Free Money, Wizall ou carte). "
+            "Dès confirmation, votre reçu PDF et votre QR code sont disponibles dans « Paiement »."
         ),
     },
     {
-        "topic": "UFR et filières",
-        "question": "Quelles sont les UFR disponibles lors de la création du dossier ?",
+        "theme": "blocage",
+        "topic": "Blocage de dossier ou paiement",
+        "question": "Pourquoi mon inscription est bloquée, mon document rejeté ou mon paiement refusé ?",
         "answer": (
-            "Lors de la complétion de votre profil dans « Mon dossier », vous choisissez "
-            "votre UFR (Sciences et Technologies, Économie et Gestion, Lettres, Sciences Juridiques), "
-            "votre filière et votre niveau (L1 à M2)."
-        ),
-    },
-    {
-        "topic": "Problème ou rejet de document",
-        "question": "Que faire si un document est rejeté ou si mon paiement échoue ?",
-        "answer": (
-            "Si un document est rejeté, le motif s'affiche dans « Documents » et vous pouvez "
-            "déposer un nouveau fichier. Si un paiement échoue, cliquez sur « Réessayer » dans « Paiement »."
+            "Vérifiez dans « Documents » si une pièce a été rejetée (le motif est affiché) "
+            "ou dans « Paiement » si la transaction a échoué (bouton « Réessayer »)."
         ),
     },
 ]
 
 
 class UniversityFaqChatbot:
-    """Chatbot FAQ basé sur TF-IDF et similarité cosinus."""
+    """Chatbot FAQ couvrant les 5 thèmes avec seuil de confiance."""
 
     def __init__(self) -> None:
-        corpus = [f"{entry['topic']} {entry['question']} {entry['answer']}" for entry in FAQ_ENTRIES]
+        corpus = [
+            f"{entry['theme']} {entry['topic']} {entry['question']} {entry['answer']}"
+            for entry in FAQ_ENTRIES
+        ]
         self._vectorizer = TfidfVectorizer()
         self._matrix = self._vectorizer.fit_transform(corpus)
 
     def answer(self, query: str) -> dict:
-        """Retourne la réponse FAQ la plus pertinente pour une question étudiante."""
+        """Retourne la réponse FAQ la plus pertinente ou un message de repli."""
         cleaned = query.strip()
         if not cleaned:
             return {
-                "answer": "Posez-moi une question sur les frais, le paiement, les documents ou les rendez-vous.",
+                "answer": "Posez-moi une question sur l'inscription, les pièces requises, l'orientation, le paiement ou un blocage.",
                 "topic": "Accueil",
+                "theme": "accueil",
                 "confidence": 1.0,
             }
 
@@ -85,14 +82,16 @@ class UniversityFaqChatbot:
         best_idx = int(similarities.argmax())
         best_score = round(float(similarities[best_idx]), 2)
 
-        if best_score < 0.08:
+        if best_score < CONFIDENCE_THRESHOLD:
             return {
                 "answer": (
-                    "Je n'ai pas trouvé de réponse précise à votre question. "
-                    "Vous pouvez me demander des informations sur les frais (25 000 FCFA), "
-                    "les moyens de paiement, les pièces justificatives, le reçu QR ou les rendez-vous."
+                    "Je ne suis pas certain de comprendre votre demande. "
+                    "Je peux vous renseigner sur : l'inscription, les pièces requises, "
+                    "l'orientation (où déposer le dossier), le suivi financier (25 000 FCFA) "
+                    "ou un blocage."
                 ),
-                "topic": "Aide générale",
+                "topic": "Hors périmètre",
+                "theme": "fallback",
                 "confidence": best_score,
             }
 
@@ -100,6 +99,7 @@ class UniversityFaqChatbot:
         return {
             "answer": matched["answer"],
             "topic": matched["topic"],
+            "theme": matched["theme"],
             "confidence": best_score,
         }
 
