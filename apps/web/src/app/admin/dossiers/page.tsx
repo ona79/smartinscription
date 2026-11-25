@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { getAdminDossiers } from "@/features/admin/queries";
 import { requireRole } from "@/features/auth/lib/session";
+import { measurePerf } from "@/lib/perf";
 import { cn } from "@/lib/utils";
 
 interface AdminDossiersPageProps {
@@ -36,8 +37,9 @@ interface AdminDossiersPageProps {
 }
 
 export default async function AdminDossiersPage({ searchParams }: AdminDossiersPageProps) {
-  await requireRole([ROLES.ADMIN]);
-  const params = await searchParams;
+  return measurePerf("page", "/admin/dossiers", async () => {
+    await requireRole([ROLES.ADMIN]);
+    const params = await searchParams;
   const page = Math.max(1, Number(params.page ?? "1") || 1);
 
   const { items, total, totalPages, ufrs } = await getAdminDossiers({
@@ -223,4 +225,5 @@ export default async function AdminDossiersPage({ searchParams }: AdminDossiersP
       )}
     </div>
   );
+  });
 }

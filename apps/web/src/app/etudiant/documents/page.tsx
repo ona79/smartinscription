@@ -15,13 +15,14 @@ import { Card } from "@/components/ui/card";
 import { requireRole } from "@/features/auth/lib/session";
 import { DocumentUploadCard } from "@/features/documents/components/document-upload-card";
 import { REQUIRED_DOCUMENT_TYPES } from "@/features/documents/services/document-service";
-import { getStudentDashboardData } from "@/features/dossier/queries";
-import { prisma } from "@/lib/prisma";
+import { getStudentDocumentsData } from "@/features/dossier/queries";
+import { measurePerf } from "@/lib/perf";
 import { cn } from "@/lib/utils";
 
 export default async function StudentDocumentsPage() {
-  const user = await requireRole([ROLES.STUDENT]);
-  const { student, registration } = await getStudentDashboardData(user.id);
+  return measurePerf("page", "/etudiant/documents", async () => {
+    const user = await requireRole([ROLES.STUDENT]);
+    const { student, registration } = await getStudentDocumentsData(user.id);
 
   if (!student || !registration) {
     redirect("/etudiant/dossier");
@@ -32,9 +33,7 @@ export default async function StudentDocumentsPage() {
     registration.statut !== REGISTRATION_STATUSES.PENDING_PAYMENT &&
     registration.statut !== REGISTRATION_STATUSES.REJECTED;
 
-  const docs = await prisma.document.findMany({
-    where: { registrationId: registration.id },
-  });
+  const docs = registration.documents;
 
   const uploadedCount = REQUIRED_DOCUMENT_TYPES.filter((reqType) =>
     docs.some((d) => d.type === reqType)
@@ -96,4 +95,5 @@ export default async function StudentDocumentsPage() {
       )}
     </div>
   );
+  });
 }

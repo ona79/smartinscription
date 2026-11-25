@@ -12,10 +12,12 @@ import {
   getStudentDashboardData,
   getUfrsWithFilieres,
 } from "@/features/dossier/queries";
+import { measurePerf } from "@/lib/perf";
 
 export default async function StudentDossierPage() {
-  const user = await requireRole([ROLES.STUDENT]);
-  const { student, registration } = await getStudentDashboardData(user.id);
+  return measurePerf("page", "/etudiant/dossier", async () => {
+    const user = await requireRole([ROLES.STUDENT]);
+    const { student, registration } = await getStudentDashboardData(user.id);
 
   if (!student) {
     const ufrs = await getUfrsWithFilieres();
@@ -98,4 +100,5 @@ export default async function StudentDossierPage() {
       </Card>
     </div>
   );
+  });
 }

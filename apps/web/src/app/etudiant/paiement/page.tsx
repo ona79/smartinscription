@@ -10,14 +10,16 @@ import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/features/auth/lib/session";
-import { getStudentDashboardData } from "@/features/dossier/queries";
+import { getStudentPaiementData } from "@/features/dossier/queries";
 import { PaymentMethodForm } from "@/features/paiement/components/payment-method-form";
 import { ReceiptCard } from "@/features/recu/components/receipt-card";
 import { generateQrDataUrl } from "@/features/recu/services/receipt-service";
+import { measurePerf } from "@/lib/perf";
 
 export default async function StudentPaiementPage() {
-  const user = await requireRole([ROLES.STUDENT]);
-  const { student, registration } = await getStudentDashboardData(user.id);
+  return measurePerf("page", "/etudiant/paiement", async () => {
+    const user = await requireRole([ROLES.STUDENT]);
+    const { student, registration } = await getStudentPaiementData(user.id);
 
   if (!student || !registration) {
     redirect("/etudiant/dossier");
@@ -70,4 +72,5 @@ export default async function StudentPaiementPage() {
       )}
     </div>
   );
+  });
 }

@@ -23,43 +23,57 @@ import {
 } from "@/components/ui/table";
 import { requireRole } from "@/features/auth/lib/session";
 import { updateAppointmentStatusAction } from "@/features/rendez-vous/actions";
+import { measurePerf } from "@/lib/perf";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 export default async function AgentHomePage() {
-  await requireRole([ROLES.AGENT, ROLES.ADMIN]);
+  return measurePerf("page", "/agent", async () => {
+    await requireRole([ROLES.AGENT, ROLES.ADMIN]);
 
-  const [dossiers, appointments] = await Promise.all([
-    prisma.registration.findMany({
-      where: {
-        statut: {
-          in: [
-            REGISTRATION_STATUSES.PAID,
-            REGISTRATION_STATUSES.DOCS_INCOMPLETE,
-            REGISTRATION_STATUSES.DOCS_COMPLETE,
-          ],
+    const [dossiers, appointments] = await Promise.all([
+      prisma.registration.findMany({
+        where: {
+          statut: {
+            in: [
+              REGISTRATION_STATUSES.PAID,
+              REGISTRATION_STATUSES.DOCS_INCOMPLETE,
+              REGISTRATION_STATUSES.DOCS_COMPLETE,
+            ],
+          },
         },
-      },
-      include: {
-        student: {
-          include: { user: true, ufr: true, filiere: true },
+        select: {
+          id: true,
+          statut: true,
+          student: {
+            select: {
+              numeroEtudiant: true,
+              niveau: true,
+              user: { select: { prenom: true, nom: true } },
+              filiere: { select: { nom: true } },
+            },
+          },
+          _count: { select: { documents: true } },
         },
-        _count: { select: { documents: true } },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 15,
-    }),
-    prisma.appointment.findMany({
-      where: { statut: APPOINTMENT_STATUSES.SCHEDULED },
-      include: {
-        student: {
-          include: { user: true },
+        orderBy: { updatedAt: "desc" },
+        take: 15,
+      }),
+      prisma.appointment.findMany({
+        where: { statut: APPOINTMENT_STATUSES.SCHEDULED },
+        select: {
+          id: true,
+          debut: true,
+          student: {
+            select: {
+              numeroEtudiant: true,
+              user: { select: { prenom: true, nom: true } },
+            },
+          },
         },
-      },
-      orderBy: { debut: "asc" },
-      take: 15,
-    }),
-  ]);
+        orderBy: { debut: "asc" },
+        take: 15,
+      }),
+    ]);
 
   return (
     <div className="space-y-5">
@@ -233,4 +247,5 @@ export default async function AgentHomePage() {
       </Card>
     </div>
   );
+  });
 }
