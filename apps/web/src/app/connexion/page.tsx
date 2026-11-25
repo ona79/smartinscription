@@ -2,6 +2,8 @@ import { AuthLayout } from "@/components/auth-layout";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { isTestAccountsEnabled } from "@/features/auth/lib/test-accounts";
 
+export const dynamic = "force-dynamic";
+
 export default function ConnexionPage() {
   const showTestAccounts = isTestAccountsEnabled();
 
