@@ -38,7 +38,7 @@ export default async function StudentDossierPage() {
       const ufrs = await getUfrsWithFilieres();
 
       return (
-        <div className="mx-auto w-full max-w-md space-y-2.5 sm:mx-0">
+        <div className="w-full max-w-2xl space-y-2.5 lg:max-w-[66%]">
           <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
             Compléter mon dossier ({CURRENT_ACADEMIC_YEAR})
           </h1>
