@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { AlertCircle, Calendar, Loader2 } from "lucide-react";
+import { AlertCircle, Calendar, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   bookAppointmentAction,
@@ -16,7 +16,7 @@ interface SlotPickerProps {
 
 const initialState: AppointmentActionState = {};
 
-/** Sélecteur de créneaux : puces de jours horizontales + grille compacte pour le jour actif. */
+/** Sélecteur de créneaux : proposition intelligente, puces de jours et grille compacte. */
 export function SlotPicker({ slots }: SlotPickerProps) {
   const [state, formAction, isPending] = useActionState(
     bookAppointmentAction,
@@ -42,6 +42,15 @@ export function SlotPicker({ slots }: SlotPickerProps) {
     setSelectedIso(firstOfDay);
   }
 
+  function handleSuggestLeastLoaded() {
+    if (slots.length === 0) return;
+    const best = slots.reduce((min, cur) =>
+      cur.loadScore < min.loadScore ? cur : min
+    );
+    setSelectedDay(best.dayLabel);
+    setSelectedIso(best.startIso);
+  }
+
   return (
     <form action={formAction} className="space-y-4">
       {state.error && (
@@ -56,7 +65,23 @@ export function SlotPicker({ slots }: SlotPickerProps) {
 
       <input type="hidden" name="startIso" value={selectedIso} />
 
-      {/* Puces de jours horizontales défilables sur mobile */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-muted-foreground">
+          Les créneaux marqués d&apos;un point vert sont les moins chargés.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleSuggestLeastLoaded}
+          className="h-9 rounded-lg px-3 text-[13px]"
+        >
+          <Sparkles className="mr-1.5 h-3.5 w-3.5 text-brand" />
+          Me proposer un créneau
+        </Button>
+      </div>
+
+      {/* Puces de jours horizontales */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {dayKeys.map((dayLabel) => {
           const isCurrentDay = selectedDay === dayLabel;
@@ -78,7 +103,7 @@ export function SlotPicker({ slots }: SlotPickerProps) {
         })}
       </div>
 
-      {/* Grille de créneaux compacts (36 px de haut, texte 14 px, sans icône d'horloge) */}
+      {/* Grille de créneaux compacts (36 px, sans icône d'horloge) */}
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
         {daySlots.map((slot) => {
           const isSelected = selectedIso === slot.startIso;
@@ -88,14 +113,21 @@ export function SlotPicker({ slots }: SlotPickerProps) {
               type="button"
               onClick={() => setSelectedIso(slot.startIso)}
               aria-pressed={isSelected}
+              title={slot.recommended ? "Créneau recommandé (moins chargé)" : undefined}
               className={cn(
-                "flex h-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors",
+                "relative flex h-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors",
                 isSelected
                   ? "border-brand bg-brand text-brand-foreground"
                   : "border-border bg-surface text-foreground hover:border-brand/50"
               )}
             >
               {slot.timeLabel}
+              {slot.recommended && !isSelected && (
+                <span
+                  aria-hidden="true"
+                  className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-brand"
+                />
+              )}
             </button>
           );
         })}

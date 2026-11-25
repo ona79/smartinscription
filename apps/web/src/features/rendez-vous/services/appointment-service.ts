@@ -24,21 +24,50 @@ const SLOT_HOURS: [number, number][] = [
   [16, 30],
 ];
 
+export function getSlotCapacity(): number {
+  const parsed = Number(process.env.APPOINTMENT_SLOT_CAPACITY ?? "1");
+  return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
+}
+
 export interface AvailableSlot {
   startIso: string;
   endIso: string;
   dayLabel: string;
   timeLabel: string;
+  loadScore: number;
+  recommended: boolean;
 }
 
-/** Génère les créneaux disponibles de 30 min sur les 5 prochains jours ouvrés. */
+export interface HourlyPredictionInput {
+  dateCible: Date;
+  heure: number | null;
+  valeur: number;
+}
+
+/**
+ * Génère les créneaux disponibles de 30 min sur les 5 prochains jours ouvrés.
+ * Tient compte de la capacité par créneau et des prévisions IA horaires (sinon charge réelle).
+ */
 export function generateAvailableSlots(
   bookedStarts: Date[],
-  now = new Date()
+  now = new Date(),
+  hourlyPredictions: HourlyPredictionInput[] = [],
+  slotCapacity = getSlotCapacity()
 ): AvailableSlot[] {
-  const bookedTimestamps = new Set(bookedStarts.map((d) => d.getTime()));
-  const slots: AvailableSlot[] = [];
+  const bookedCounts = new Map<number, number>();
+  for (const d of bookedStarts) {
+    const ts = d.getTime();
+    bookedCounts.set(ts, (bookedCounts.get(ts) ?? 0) + 1);
+  }
 
+  const predByDayHour = new Map<string, number>();
+  for (const p of hourlyPredictions) {
+    if (p.heure === null) continue;
+    const key = `${p.dateCible.toISOString().slice(0, 10)}-${p.heure}`;
+    predByDayHour.set(key, p.valeur);
+  }
+
+  const slots: AvailableSlot[] = [];
   const cursor = new Date(now);
   cursor.setHours(0, 0, 0, 0);
 
@@ -68,29 +97,53 @@ export function generateAvailableSlots(
       if (start.getTime() <= now.getTime()) {
         continue;
       }
-      if (bookedTimestamps.has(start.getTime())) {
+
+      const bookedCount = bookedCounts.get(start.getTime()) ?? 0;
+      if (bookedCount >= slotCapacity) {
         continue;
       }
 
       const end = new Date(start.getTime() + SLOT_DURATION_MINUTES * 60_000);
       const timeLabel = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+      const predKey = `${start.toISOString().slice(0, 10)}-${hour}`;
+      const predictedLoad = predByDayHour.get(predKey);
+      const loadScore =
+        predictedLoad !== undefined ? predictedLoad + bookedCount : bookedCount;
 
       slots.push({
         startIso: start.toISOString(),
         endIso: end.toISOString(),
         dayLabel,
         timeLabel,
+        loadScore,
+        recommended: false,
       });
+    }
+  }
+
+  if (slots.length > 0) {
+    const minLoad = Math.min(...slots.map((s) => s.loadScore));
+    for (const s of slots) {
+      if (s.loadScore === minLoad) {
+        s.recommended = true;
+      }
     }
   }
 
   return slots;
 }
 
-/** Réserve un créneau de rendez-vous pour un étudiant ayant payé son inscription. */
+/** Retourne le créneau le moins chargé à venir (attribution intelligente). */
+export function pickLeastLoadedSlot(slots: AvailableSlot[]): AvailableSlot | null {
+  if (slots.length === 0) return null;
+  return slots.reduce((best, cur) => (cur.loadScore < best.loadScore ? cur : best));
+}
+
+/** Réserve ou déplace un créneau de rendez-vous pour un étudiant ayant payé. */
 export async function bookStudentAppointment(params: {
   userId: string;
   startIso: string;
+  replaceExisting?: boolean;
 }) {
   const start = new Date(params.startIso);
   if (Number.isNaN(start.getTime()) || start.getTime() <= Date.now()) {
@@ -98,6 +151,7 @@ export async function bookStudentAppointment(params: {
   }
 
   const end = new Date(start.getTime() + SLOT_DURATION_MINUTES * 60_000);
+  const slotCapacity = getSlotCapacity();
 
   const student = await prisma.student.findUnique({
     where: { userId: params.userId },
@@ -128,28 +182,40 @@ export async function bookStudentAppointment(params: {
     throw new Error("Réglez d'abord vos frais d'inscription avant de réserver un créneau.");
   }
 
-  if (student.appointments.length > 0) {
+  if (student.appointments.length > 0 && !params.replaceExisting) {
     throw new Error("Vous avez déjà un rendez-vous actif. Annulez-le pour en choisir un autre.");
   }
 
-  const conflicting = await prisma.appointment.findFirst({
+  const bookedCount = await prisma.appointment.count({
     where: {
       debut: start,
       statut: APPOINTMENT_STATUSES.SCHEDULED,
     },
   });
 
-  if (conflicting) {
-    throw new Error("Ce créneau vient d'être réservé. Veuillez en choisir un autre.");
+  if (bookedCount >= slotCapacity) {
+    throw new Error("Ce créneau vient d'être complet. Veuillez en choisir un autre.");
   }
 
-  const appointment = await prisma.appointment.create({
-    data: {
-      studentId: student.id,
-      debut: start,
-      fin: end,
-      statut: APPOINTMENT_STATUSES.SCHEDULED,
-    },
+  const appointment = await prisma.$transaction(async (tx) => {
+    if (params.replaceExisting && student.appointments.length > 0) {
+      await tx.appointment.updateMany({
+        where: {
+          studentId: student.id,
+          statut: APPOINTMENT_STATUSES.SCHEDULED,
+        },
+        data: { statut: APPOINTMENT_STATUSES.CANCELLED },
+      });
+    }
+
+    return tx.appointment.create({
+      data: {
+        studentId: student.id,
+        debut: start,
+        fin: end,
+        statut: APPOINTMENT_STATUSES.SCHEDULED,
+      },
+    });
   });
 
   const formattedSlot = start.toLocaleString("fr-FR", {
@@ -161,28 +227,31 @@ export async function bookStudentAppointment(params: {
     userId: student.user.id,
     email: student.user.email,
     type: "APPOINTMENT_CONFIRMED",
-    message: `Votre rendez-vous est confirmé pour le ${formattedSlot}.`,
+    message: params.replaceExisting
+      ? `Votre rendez-vous a été déplacé au ${formattedSlot}.`
+      : `Votre rendez-vous est confirmé pour le ${formattedSlot}.`,
     emailSubject: "Confirmation de rendez-vous — SmartInscription IA",
-    emailHtml: `<p>Bonjour ${student.user.prenom},</p><p>Votre rendez-vous de validation est confirmé pour le <strong>${formattedSlot}</strong>.</p>`,
+    emailHtml: `<p>Bonjour ${student.user.prenom},</p><p>Votre rendez-vous est fixé au <strong>${formattedSlot}</strong>.</p>`,
   });
 
   return appointment;
 }
 
-/** Annule un rendez-vous planifié appartenant à l'étudiant. */
+/** Annule un rendez-vous planifié appartenant à l'étudiant et notifie. */
 export async function cancelStudentAppointment(params: {
   userId: string;
   appointmentId: string;
 }) {
   const student = await prisma.student.findUnique({
     where: { userId: params.userId },
+    include: { user: true },
   });
 
   if (!student) {
     throw new Error("Profil étudiant introuvable.");
   }
 
-  await prisma.appointment.updateMany({
+  const res = await prisma.appointment.updateMany({
     where: {
       id: params.appointmentId,
       studentId: student.id,
@@ -190,6 +259,17 @@ export async function cancelStudentAppointment(params: {
     },
     data: { statut: APPOINTMENT_STATUSES.CANCELLED },
   });
+
+  if (res.count > 0) {
+    await notifyUser({
+      userId: student.user.id,
+      email: student.user.email,
+      type: "APPOINTMENT_CONFIRMED",
+      message: "Votre rendez-vous a bien été annulé. Vous pouvez choisir un nouveau créneau.",
+      emailSubject: "Annulation de rendez-vous — SmartInscription IA",
+      emailHtml: `<p>Bonjour ${student.user.prenom},</p><p>Votre rendez-vous a été annulé.</p>`,
+    });
+  }
 }
 
 /** Met à jour le statut d'un rendez-vous (AGENT ou ADMIN uniquement). */
