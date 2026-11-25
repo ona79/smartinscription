@@ -63,6 +63,7 @@ Plateforme web et mobile (PWA) de paiement et de gestion des inscriptions univer
    pnpm --filter @smartinscription/web exec prisma migrate deploy
    pnpm db:seed
    ```
+   *(Note : le seed est bloqué si `NODE_ENV=production` sauf `SEED_ALLOW_PROD=true`. Les mots de passe des comptes seedés sont configurables via `SEED_ADMIN_PASSWORD`, `SEED_AGENT_PASSWORD` et `SEED_STUDENT_PASSWORD`.)*
 
 ## Commandes principales
 

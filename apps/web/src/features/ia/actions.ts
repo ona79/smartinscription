@@ -32,13 +32,21 @@ const LOCAL_FAQ_FALLBACK: { keywords: string[]; topic: string; answer: string }[
   },
 ];
 
+export interface IaActionResult {
+  ok: boolean;
+  message: string;
+}
+
 /** Génère et enregistre en base les prévisions IA d'affluence et de personnel (ADMIN). */
-export async function generateIaPredictionsAction(): Promise<void> {
+export async function generateIaPredictionsAction(): Promise<IaActionResult> {
   await requireRole([ROLES.ADMIN]);
 
   const result = await fetchAffluenceAndStaffing(7);
   if (!result) {
-    return;
+    return {
+      ok: false,
+      message: "Service IA indisponible, réessayez.",
+    };
   }
 
   await prisma.$transaction(async (tx) => {
@@ -62,10 +70,14 @@ export async function generateIaPredictionsAction(): Promise<void> {
   });
 
   revalidatePath("/admin/statistiques");
+  return {
+    ok: true,
+    message: `Prévisions IA générées pour les ${result.forecasts.length} prochains jours.`,
+  };
 }
 
 /** Analyse les inscriptions récentes avec le modèle d'anomalies IA (ADMIN). */
-export async function runIaAnomalyScanAction(): Promise<void> {
+export async function runIaAnomalyScanAction(): Promise<IaActionResult> {
   await requireRole([ROLES.ADMIN]);
 
   const registrations = await prisma.registration.findMany({
@@ -76,6 +88,9 @@ export async function runIaAnomalyScanAction(): Promise<void> {
     take: 30,
     orderBy: { createdAt: "desc" },
   });
+
+  let serviceReachable = false;
+  let createdAlerts = 0;
 
   for (const reg of registrations) {
     const latestPayment = reg.payments[0];
@@ -91,7 +106,19 @@ export async function runIaAnomalyScanAction(): Promise<void> {
       docs_count: docsCount,
     });
 
-    if (analysis?.is_anomaly) {
+    if (!analysis) {
+      if (!serviceReachable) {
+        return {
+          ok: false,
+          message: "Service IA indisponible, réessayez.",
+        };
+      }
+      continue;
+    }
+
+    serviceReachable = true;
+
+    if (analysis.is_anomaly) {
       const existingAlert = await prisma.fraudAlert.findFirst({
         where: { registrationId: reg.id, resolu: false },
       });
@@ -105,12 +132,21 @@ export async function runIaAnomalyScanAction(): Promise<void> {
             resolu: false,
           },
         });
+        createdAlerts += 1;
       }
     }
   }
 
   revalidatePath("/admin/alertes-fraude");
   revalidatePath("/admin");
+
+  return {
+    ok: true,
+    message:
+      createdAlerts > 0
+        ? `Analyse terminée : ${createdAlerts} nouvelle(s) alerte(s) créée(s).`
+        : "Analyse terminée : aucune nouvelle anomalie détectée.",
+  };
 }
 
 /** Interroge le chatbot FAQ (service FastAPI avec repli local). */

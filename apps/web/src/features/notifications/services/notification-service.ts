@@ -45,6 +45,9 @@ export async function notifyUser(
   }
 }
 
+/** Alias stable du contrat de notification pour les modules métier. */
+export const notify = notifyUser;
+
 /** Récupère les dernières notifications d'un utilisateur. */
 export async function getUserNotifications(userId: string, limit = 10) {
   return prisma.notification.findMany({

@@ -2,6 +2,9 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createClient } from "@supabase/supabase-js";
 import { PrismaClient, Role } from "../src/generated/prisma/client";
+import { assertSeedAllowed, resolveSeedPasswords } from "./seed-guard";
+
+assertSeedAllowed();
 
 const connectionString =
   process.env.DIRECT_URL ??
@@ -11,7 +14,7 @@ const connectionString =
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-const SEED_PASSWORD = process.env.SEED_DEFAULT_PASSWORD ?? "SmartPass2026!";
+const SEED_PASSWORDS = resolveSeedPasswords();
 
 const UFR_DATA = [
   {
@@ -86,7 +89,7 @@ async function resolveSupabaseUserId(spec: SeedUserSpec): Promise<string> {
 
   const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
     email: spec.email,
-    password: SEED_PASSWORD,
+    password: SEED_PASSWORDS[spec.role],
     email_confirm: true,
     user_metadata: {
       nom: spec.nom,

@@ -9,6 +9,7 @@ import {
 } from "@smartinscription/shared";
 import { getPaymentProvider } from "@/features/paiement/providers";
 import type { VerifiedWebhookResult } from "@/features/paiement/providers/types";
+import { triggerAnomalyAnalysis } from "@/features/ia/trigger-anomaly-analysis";
 import { notifyUser } from "@/features/notifications/services/notification-service";
 import {
   formatReceiptNumber,
@@ -209,6 +210,8 @@ export async function processVerifiedWebhook(
       await generateAndStoreReceiptPdf(updated.id).catch((err) => {
         console.warn("[recu] Génération/upload PDF différé:", err);
       });
+
+      await triggerAnomalyAnalysis(payment.registrationId);
 
       const owner = await db.student.findUnique({
         where: { id: payment.registration.studentId },

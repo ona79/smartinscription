@@ -57,18 +57,31 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+enum ActivityType {
+  LOGIN
+  CHECK_IN
+}
+
+enum AiClassification {
+  CONFORME
+  A_VERIFIER
+  SUSPECT
+}
+
 model User {
-  id        String   @id @db.Uuid
-  email     String   @unique
-  nom       String
-  prenom    String
-  telephone String?
-  role      Role     @default(STUDENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @db.Uuid
+  email       String    @unique
+  nom         String
+  prenom      String
+  telephone   String?
+  role        Role      @default(STUDENT)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   student       Student?
   notifications Notification[]
+  activities    ActivityLog[]
 
   @@index([role])
 }
@@ -78,8 +91,9 @@ model UFR {
   nom  String
   code String @unique
 
-  filieres Filiere[]
-  students Student[]
+  filieres    Filiere[]
+  students    Student[]
+  predictions Prediction[]
 }
 
 model Filiere {
@@ -116,6 +130,9 @@ model Registration {
   studentId       String
   anneeAcademique String
   statut          RegistrationStatus @default(DRAFT)
+  aiClass         AiClassification?
+  aiScore         Float?
+  aiAnalyzedAt    DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -218,7 +235,25 @@ model Prediction {
   type      String
   dateCible DateTime
   valeur    Float
+  ufrId     String?
+  heure     Int?
   createdAt DateTime @default(now())
 
+  ufr UFR? @relation(fields: [ufrId], references: [id], onDelete: SetNull)
+
   @@index([type, dateCible])
+  @@index([ufrId])
+}
+
+model ActivityLog {
+  id        String       @id @default(cuid())
+  userId    String?      @db.Uuid
+  type      ActivityType
+  meta      Json?
+  createdAt DateTime     @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+  @@index([userId])
 }

@@ -3,6 +3,8 @@ const IA_BASE_URL =
   process.env.NEXT_PUBLIC_IA_SERVICE_URL ||
   "http://localhost:8000";
 
+const IA_TIMEOUT_MS = 10_000;
+
 export interface AffluenceForecastItem {
   date: string;
   predicted_registrations: number;
@@ -30,22 +32,32 @@ export interface ChatbotResponse {
   confidence: number;
 }
 
+async function postToIa<T>(path: string, body: unknown): Promise<T | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), IA_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${IA_BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 /** Appelle le microservice FastAPI pour prédire l'affluence et les besoins en personnel. */
 export async function fetchAffluenceAndStaffing(
   days = 7
 ): Promise<AffluenceResponse | null> {
-  try {
-    const res = await fetch(`${IA_BASE_URL}/predict/affluence`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ days }),
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as AffluenceResponse;
-  } catch {
-    return null;
-  }
+  return postToIa<AffluenceResponse>("/predict/affluence", { days });
 }
 
 /** Appelle le microservice FastAPI pour classifier un dossier et détecter des anomalies. */
@@ -55,32 +67,10 @@ export async function analyzeDossierAnomaly(payload: {
   hour_of_day: number;
   docs_count: number;
 }): Promise<DossierAnalysisResponse | null> {
-  try {
-    const res = await fetch(`${IA_BASE_URL}/analyze/dossier`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as DossierAnalysisResponse;
-  } catch {
-    return null;
-  }
+  return postToIa<DossierAnalysisResponse>("/analyze/dossier", payload);
 }
 
 /** Interroge le chatbot FAQ du microservice FastAPI. */
 export async function askFaqChatbot(question: string): Promise<ChatbotResponse | null> {
-  try {
-    const res = await fetch(`${IA_BASE_URL}/chatbot/faq`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as ChatbotResponse;
-  } catch {
-    return null;
-  }
+  return postToIa<ChatbotResponse>("/chatbot/faq", { question });
 }
