@@ -1,69 +1,107 @@
 "use server";
 
-import { ROLES } from "@smartinscription/shared";
+import {
+  CURRENT_ACADEMIC_YEAR,
+  PAYMENT_STATUSES,
+  REGISTRATION_STATUS_LABELS_FR,
+  REGISTRATION_STATUSES,
+  ROLES,
+  type RegistrationStatus,
+} from "@smartinscription/shared";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/features/auth/lib/session";
 import {
-  analyzeDossierAnomaly,
   askFaqChatbot,
   fetchAffluenceAndStaffing,
+  fetchStaffingForecast,
   type ChatbotResponse,
 } from "@/features/ia/services/ia-client";
+import { triggerAnomalyAnalysis } from "@/features/ia/trigger-anomaly-analysis";
 import { prisma } from "@/lib/prisma";
-
-const LOCAL_FAQ_FALLBACK: { keywords: string[]; topic: string; answer: string }[] = [
-  {
-    keywords: ["frais", "combien", "25000", "25 000", "montant", "payer"],
-    topic: "Frais d'inscription",
-    answer:
-      "Les frais d'inscription s'élèvent à 25 000 FCFA. Vous pouvez payer via Wave, Orange Money, Free Money, Wizall ou carte bancaire dans l'onglet « Paiement ».",
-  },
-  {
-    keywords: ["document", "piece", "pièce", "diplome", "diplôme", "releve", "relevé", "photo"],
-    topic: "Pièces justificatives",
-    answer:
-      "Déposez 4 pièces dans « Documents » (PDF/JPG/PNG/WEBP, max 5 Mo) : pièce d'identité, relevé de notes, diplôme/attestation et photo d'identité.",
-  },
-  {
-    keywords: ["rdv", "rendez-vous", "creneau", "créneau"],
-    topic: "Rendez-vous",
-    answer:
-      "Après le paiement, choisissez un créneau de 30 minutes dans l'onglet « Rendez-vous » et présentez-vous avec votre QR code.",
-  },
-];
 
 export interface IaActionResult {
   ok: boolean;
   message: string;
 }
 
-/** Génère et enregistre en base les prévisions IA d'affluence et de personnel (ADMIN). */
+const LOCAL_FAQ_FALLBACK: { keywords: string[]; topic: string; answer: string }[] = [
+  {
+    keywords: ["frais", "combien", "25000", "25 000", "montant", "payer", "recu", "reçu"],
+    topic: "Suivi financier",
+    answer:
+      "Les frais d'inscription s'élèvent à 25 000 FCFA (Orange Money, Wave, Free Money, Wizall ou carte) dans « Paiement ».",
+  },
+  {
+    keywords: ["document", "piece", "pièce", "diplome", "diplôme", "releve", "relevé", "photo"],
+    topic: "Pièces requises",
+    answer:
+      "Déposez 4 pièces dans « Documents » (PDF/JPG/PNG/WEBP, max 5 Mo) : pièce d'identité, relevé de notes, diplôme/attestation et photo d'identité.",
+  },
+  {
+    keywords: ["rdv", "rendez-vous", "creneau", "créneau", "deposer", "déposer", "ufr", "ou ", "où "],
+    topic: "Orientation",
+    answer:
+      "Votre dossier se dépose en ligne par UFR (ST, SEG, LSH, SJP). Pour la validation physique, réservez un créneau dans « Rendez-vous ».",
+  },
+  {
+    keywords: ["bloque", "bloqué", "rejet", "refus", "probleme", "problème"],
+    topic: "Blocage",
+    answer:
+      "Vérifiez dans « Documents » si une pièce a été rejetée ou dans « Paiement » si la transaction a échoué.",
+  },
+];
+
+/** Génère et enregistre en base les prévisions AFFLUENCE_JOUR, AFFLUENCE_HEURE et BESOIN_AGENTS. */
 export async function generateIaPredictionsAction(): Promise<IaActionResult> {
   await requireRole([ROLES.ADMIN]);
 
-  const result = await fetchAffluenceAndStaffing(7);
-  if (!result) {
+  const [affluence, staffing, ufrs] = await Promise.all([
+    fetchAffluenceAndStaffing(7),
+    fetchStaffingForecast(7, 25),
+    prisma.uFR.findMany({ select: { id: true, code: true } }),
+  ]);
+
+  if (!affluence || !staffing) {
     return {
       ok: false,
       message: "Service IA indisponible, réessayez.",
     };
   }
 
+  const ufrByCode = new Map(ufrs.map((u) => [u.code, u.id]));
+
   await prisma.$transaction(async (tx) => {
-    for (const item of result.forecasts) {
-      const targetDate = new Date(`${item.date}T09:00:00.000Z`);
+    for (const item of affluence.forecasts) {
+      const targetDate = new Date(`${item.date}T00:00:00.000Z`);
       await tx.prediction.create({
         data: {
-          type: "AFFLUENCE_DOSSIERS",
+          type: "AFFLUENCE_JOUR",
           dateCible: targetDate,
           valeur: item.predicted_registrations,
         },
       });
+    }
+
+    for (const hourItem of affluence.hourly_forecasts) {
+      const targetDate = new Date(`${hourItem.date}T00:00:00.000Z`);
+      await tx.prediction.create({
+        data: {
+          type: "AFFLUENCE_HEURE",
+          dateCible: targetDate,
+          heure: hourItem.heure,
+          valeur: hourItem.predicted_registrations,
+        },
+      });
+    }
+
+    for (const ufrItem of staffing.ufr_staffing) {
+      const ufrId = ufrByCode.get(ufrItem.ufr_code) ?? null;
       await tx.prediction.create({
         data: {
           type: "BESOIN_AGENTS",
-          dateCible: targetDate,
-          valeur: item.recommended_agents,
+          dateCible: new Date(),
+          ufrId,
+          valeur: ufrItem.recommended_agents_per_day,
         },
       });
     }
@@ -72,93 +110,122 @@ export async function generateIaPredictionsAction(): Promise<IaActionResult> {
   revalidatePath("/admin/statistiques");
   return {
     ok: true,
-    message: `Prévisions IA générées pour les ${result.forecasts.length} prochains jours.`,
+    message: `Prévisions IA générées (${affluence.forecasts.length} jours, granularité horaire et par UFR).`,
   };
 }
 
-/** Analyse les inscriptions récentes avec le modèle d'anomalies IA (ADMIN). */
+/** Analyse les inscriptions récentes et met à jour aiClass / FraudAlert (ADMIN). */
 export async function runIaAnomalyScanAction(): Promise<IaActionResult> {
   await requireRole([ROLES.ADMIN]);
 
+  const probe = await fetchAffluenceAndStaffing(1);
+  if (!probe) {
+    return {
+      ok: false,
+      message: "Service IA indisponible, réessayez.",
+    };
+  }
+
   const registrations = await prisma.registration.findMany({
-    include: {
-      payments: true,
-      _count: { select: { documents: true } },
-    },
+    select: { id: true },
     take: 30,
     orderBy: { createdAt: "desc" },
   });
 
-  let serviceReachable = false;
-  let createdAlerts = 0;
-
   for (const reg of registrations) {
-    const latestPayment = reg.payments[0];
-    const amount = latestPayment?.montant ?? 25000;
-    const attempts = Math.max(1, reg.payments.length);
-    const hour = (latestPayment?.createdAt ?? reg.createdAt).getHours();
-    const docsCount = reg._count.documents;
-
-    const analysis = await analyzeDossierAnomaly({
-      amount_fcfa: amount,
-      payment_attempts: attempts,
-      hour_of_day: hour,
-      docs_count: docsCount,
-    });
-
-    if (!analysis) {
-      if (!serviceReachable) {
-        return {
-          ok: false,
-          message: "Service IA indisponible, réessayez.",
-        };
-      }
-      continue;
-    }
-
-    serviceReachable = true;
-
-    if (analysis.is_anomaly) {
-      const existingAlert = await prisma.fraudAlert.findFirst({
-        where: { registrationId: reg.id, resolu: false },
-      });
-      if (!existingAlert) {
-        await prisma.fraudAlert.create({
-          data: {
-            registrationId: reg.id,
-            paymentId: latestPayment?.id ?? null,
-            type: `IA_${analysis.classification}`,
-            score: analysis.anomaly_score,
-            resolu: false,
-          },
-        });
-        createdAlerts += 1;
-      }
-    }
+    await triggerAnomalyAnalysis(reg.id);
   }
 
   revalidatePath("/admin/alertes-fraude");
+  revalidatePath("/admin/dossiers");
   revalidatePath("/admin");
 
   return {
     ok: true,
-    message:
-      createdAlerts > 0
-        ? `Analyse terminée : ${createdAlerts} nouvelle(s) alerte(s) créée(s).`
-        : "Analyse terminée : aucune nouvelle anomalie détectée.",
+    message: `Analyse IA terminée sur ${registrations.length} dossier(s).`,
   };
 }
 
-/** Interroge le chatbot FAQ (service FastAPI avec repli local). */
+/** Interroge le chatbot FAQ avec contexte réel côté serveur pour les questions de suivi. */
 export async function askFaqChatbotAction(question: string): Promise<ChatbotResponse> {
-  await requireRole([ROLES.STUDENT, ROLES.AGENT, ROLES.ADMIN]);
+  const user = await requireRole([ROLES.STUDENT, ROLES.AGENT, ROLES.ADMIN]);
+  const lower = question.toLowerCase();
+
+  // Questions personnalisées basées sur l'état réel de l'étudiant connecté (côté serveur)
+  if (
+    user.role === ROLES.STUDENT &&
+    (lower.includes("mon paiement") ||
+      lower.includes("paiement est-il") ||
+      lower.includes("payé") ||
+      lower.includes("mon inscription") ||
+      lower.includes("bloquée") ||
+      lower.includes("statut"))
+  ) {
+    const student = await prisma.student.findUnique({
+      where: { userId: user.id },
+      include: {
+        registrations: {
+          where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
+          include: {
+            payments: { orderBy: { createdAt: "desc" } },
+            documents: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    const reg = student?.registrations[0];
+    if (!student || !reg) {
+      return {
+        answer:
+          "Votre profil académique n'est pas encore complété. Rendez-vous dans « Mon dossier » pour démarrer votre inscription.",
+        topic: "Statut personnel",
+        confidence: 1,
+      };
+    }
+
+    const paid = reg.payments.find((p) => p.statut === PAYMENT_STATUSES.SUCCESS);
+    const rejectedDoc = reg.documents.find((d) => d.verificationStatus === "REJECTED");
+
+    if (lower.includes("paiement")) {
+      return {
+        answer: paid
+          ? `Oui, votre paiement de 25 000 FCFA est validé (reçu ${paid.receiptNumber ?? paid.providerRef}).`
+          : "Votre paiement n'est pas encore confirmé. Ouvrez l'onglet « Paiement » pour régler les 25 000 FCFA.",
+        topic: "Suivi financier personnel",
+        confidence: 1,
+      };
+    }
+
+    if (rejectedDoc) {
+      return {
+        answer: `Votre dossier nécessite une correction : un document a été rejeté (${rejectedDoc.motif ?? "voir l'onglet Documents"}).`,
+        topic: "Blocage détecté",
+        confidence: 1,
+      };
+    }
+
+    const label = REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus];
+    return {
+      answer: `Statut actuel de votre dossier : ${label}. ${
+        reg.statut === REGISTRATION_STATUSES.DRAFT ||
+        reg.statut === REGISTRATION_STATUSES.PENDING_PAYMENT
+          ? "Prochaine étape : réglez vos frais dans « Paiement »."
+          : reg.documents.length < 4
+            ? `Il vous reste ${4 - reg.documents.length} pièce(s) à déposer dans « Documents ».`
+            : "Votre dossier suit son cours normal."
+      }`,
+      topic: "Statut personnel",
+      confidence: 1,
+    };
+  }
 
   const remote = await askFaqChatbot(question);
   if (remote) {
     return remote;
   }
 
-  const lower = question.toLowerCase();
   const matched = LOCAL_FAQ_FALLBACK.find((item) =>
     item.keywords.some((kw) => lower.includes(kw))
   );
@@ -173,7 +240,7 @@ export async function askFaqChatbotAction(question: string): Promise<ChatbotResp
 
   return {
     answer:
-      "Posez votre question sur les frais (25 000 FCFA), les moyens de paiement, les pièces justificatives ou les rendez-vous.",
+      "Je peux vous renseigner sur l'inscription, les pièces requises, l'orientation (où déposer le dossier), le suivi financier (25 000 FCFA) ou un blocage.",
     topic: "Aide générale",
     confidence: 0.5,
   };
