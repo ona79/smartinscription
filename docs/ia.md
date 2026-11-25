@@ -34,3 +34,49 @@ En l'absence d'historique réel multi-années au démarrage du projet, deux jeux
 ## 4. Limites assumées
 1. **Données synthétiques** : les prévisions reflètent les hypothèses de saisonnalité encodées dans `synthetic_data.py` et devront être ré-entraînées sur les données réelles collectées dans `ActivityLog` et `Registration` après la première campagne.
 2. **Chatbot par similarité TF-IDF** : ne génère pas de texte libre (zéro hallucination, coût nul), complété côté serveur par les requêtes Prisma pour les questions personnelles (« mon paiement est-il validé ? »).
+
+---
+
+## 5. Contrat de données réelles (à transmettre à l'université)
+
+Pour entraîner les modèles IA sur les données historiques de l'université sans exposer d'informations personnelles, deux fichiers CSV UTF-8 (séparateur `,`) sont attendus :
+
+### A. Fichier d'affluence agrégée (`affluence.csv`)
+> Aucune donnée personnelle. Minimum recommandé : **50 lignes** (au moins 2 semaines d'historique).
+
+| Colonne | Type | Format / Valeurs autorisées | Exemple |
+| --- | --- | --- | --- |
+| `date` | Date | `AAAA-MM-JJ` | `2025-10-14` |
+| `heure` | Entier | `0` à `23` | `10` |
+| `ufr` | Texte | Code UFR (`UFR-ST`, `UFR-SEG`, `UFR-LSH`, `UFR-SJP`) | `UFR-ST` |
+| `nb_inscriptions` | Entier | `0` à `5000` (sans doublon `(date, heure, ufr)`) | `14` |
+
+### B. Fichier de paiements pseudonymisés (`payments.csv`)
+> Aucune colonne d'identité directe (`nom`, `prenom`, `email`, `telephone`, `numero_etudiant`). Minimum recommandé : **30 lignes**.
+
+| Colonne | Type | Format / Valeurs autorisées | Exemple |
+| --- | --- | --- | --- |
+| `student_hash` | Texte | Empreinte anonyme (générée via `scripts/pseudonymize.py`) | `a8f3c19b04e271d0` |
+| `ufr` | Texte | Code UFR | `UFR-SEG` |
+| `filiere` | Texte | Nom de la filière | `Finance-Comptabilité` |
+| `niveau` | Texte | `L1`, `L2`, `L3`, `M1`, `M2` | `L2` |
+| `montant` | Entier | Montant en FCFA (`1` à `1000000`) | `25000` |
+| `moyen` | Texte | `WAVE`, `ORANGE_MONEY`, `FREE_MONEY`, `WIZALL`, `CARD` | `WAVE` |
+| `horodatage` | Date/Heure | ISO-8601 | `2025-10-14T10:24:00` |
+| `statut` | Texte | `PENDING`, `SUCCESS`, `FAILED` | `SUCCESS` |
+
+### C. Procédure d'anonymisation et d'entraînement
+
+```bash
+# 1. Pseudonymiser un export brut (supprime nom, prénom, e-mail, téléphone, numéro étudiant)
+cd services/ia
+PSEUDO_SALT="votre-sel-secret-universite" python scripts/pseudonymize.py \
+  --input data/raw_payments.csv \
+  --output data/payments.csv
+
+# 2. Entraîner sur données réelles (valide les CSV, entraîne, écrit artifacts/metrics.json)
+python train.py --source csv --affluence data/affluence.csv --payments data/payments.csv
+
+# Ou sur données synthétiques (par défaut)
+python train.py --source synthetic
+```
