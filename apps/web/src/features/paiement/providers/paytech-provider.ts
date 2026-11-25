@@ -102,6 +102,15 @@ export class PayTechProvider implements PaymentProvider {
       return { valid: false, providerRef: refCommand, outcome: "FAILED" };
     }
 
+    // Vérifie la cohérence du montant si PayTech le transmet dans l'IPN
+    if (
+      typeEvent === "sale_complete" &&
+      payload.item_price !== undefined &&
+      Number(payload.item_price) !== REGISTRATION_FEE_FCFA
+    ) {
+      return { valid: false, providerRef: refCommand, outcome: "FAILED" };
+    }
+
     return {
       valid: true,
       providerRef: refCommand,

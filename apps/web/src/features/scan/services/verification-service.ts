@@ -1,3 +1,5 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import {
   PAYMENT_STATUSES,
   REGISTRATION_STATUS_LABELS_FR,
@@ -15,8 +17,32 @@ const RATE_LIMIT_MAX_ATTEMPTS = 30;
 
 const attemptStore = new Map<string, number[]>();
 
-/** Limiteur de débit par utilisateur (fenêtre glissante de 60s). */
-export function checkVerificationRateLimit(userId: string, now = Date.now()): boolean {
+const upstashRatelimit =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Ratelimit({
+        redis: new Redis({
+          url: process.env.UPSTASH_REDIS_REST_URL,
+          token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        }),
+        limiter: Ratelimit.slidingWindow(RATE_LIMIT_MAX_ATTEMPTS, "60 s"),
+        prefix: "smartinscription:scan-ratelimit",
+      })
+    : null;
+
+/** Limiteur de débit partagé (Upstash Redis en prod, repli mémoire en dev). */
+export async function checkVerificationRateLimit(
+  userId: string,
+  now = Date.now()
+): Promise<boolean> {
+  if (upstashRatelimit) {
+    try {
+      const { success } = await upstashRatelimit.limit(userId);
+      return success;
+    } catch (error) {
+      console.warn("[ratelimit] Erreur Upstash, repli mémoire:", error);
+    }
+  }
+
   const timestamps = attemptStore.get(userId) ?? [];
   const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
 
@@ -89,7 +115,7 @@ export async function verifyReceiptByQrToken(
     };
   }
 
-  if (!deps.skipRateLimit && !checkVerificationRateLimit(params.requesterId)) {
+  if (!deps.skipRateLimit && !(await checkVerificationRateLimit(params.requesterId))) {
     return {
       valid: false,
       error: "Trop de tentatives de scan. Veuillez patienter une minute.",
