@@ -4,15 +4,20 @@ import { isTestAccountsEnabled } from "@/features/auth/lib/test-accounts";
 
 export const dynamic = "force-dynamic";
 
-export default function ConnexionPage() {
+interface ConnexionPageProps {
+  searchParams: Promise<{ raison?: string }>;
+}
+
+export default async function ConnexionPage({ searchParams }: ConnexionPageProps) {
   const showTestAccounts = isTestAccountsEnabled();
+  const { raison } = await searchParams;
 
   return (
     <AuthLayout
       title="Connexion"
       subtitle="Accédez à votre espace étudiant, agent ou administrateur."
     >
-      <LoginForm showTestAccounts={showTestAccounts} />
+      <LoginForm showTestAccounts={showTestAccounts} reason={raison} />
     </AuthLayout>
   );
 }

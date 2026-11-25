@@ -6,15 +6,15 @@ import {
   ROLES,
   type RegistrationStatus,
 } from "@smartinscription/shared";
-import { Calendar, CheckCircle2, CreditCard, XCircle } from "lucide-react";
+import { Calendar, CheckCircle2, CreditCard } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireRole } from "@/features/auth/lib/session";
 import { getStudentDashboardData } from "@/features/dossier/queries";
-import { cancelAppointmentAction } from "@/features/rendez-vous/actions";
+import { CancelAppointmentButton } from "@/features/rendez-vous/components/cancel-appointment-button";
 import { SlotPicker } from "@/features/rendez-vous/components/slot-picker";
 import { generateAvailableSlots } from "@/features/rendez-vous/services/appointment-service";
 import { measurePerf } from "@/lib/perf";
@@ -109,18 +109,7 @@ export default async function StudentRendezVousPage() {
               </div>
             </div>
 
-            <form action={cancelAppointmentAction}>
-              <input type="hidden" name="appointmentId" value={activeAppointment.id} />
-              <Button
-                type="submit"
-                variant="outline"
-                size="sm"
-                className="h-10 rounded-xl px-4 text-xs font-semibold text-destructive hover:bg-destructive/5"
-              >
-                <XCircle className="mr-1.5 h-4 w-4" />
-                Annuler le rendez-vous
-              </Button>
-            </form>
+            <CancelAppointmentButton appointmentId={activeAppointment.id} />
           </CardContent>
         </Card>
       ) : availableSlots.length === 0 ? (
@@ -130,8 +119,8 @@ export default async function StudentRendezVousPage() {
           description="Tous les créneaux des prochains jours ouvrés sont complets. Réessayez plus tard."
         />
       ) : (
-        <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-          <CardContent className="p-6">
+        <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardContent className="p-4 sm:p-5">
             <SlotPicker slots={availableSlots} />
           </CardContent>
         </Card>

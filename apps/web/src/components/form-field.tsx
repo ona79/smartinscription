@@ -50,7 +50,7 @@ export function FormField({
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
           className={cn(
-            "h-10 rounded-lg bg-surface text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring/30",
+            "h-11 rounded-lg bg-surface text-base sm:h-10 sm:text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring/30",
             icon && "pl-9",
             trailing && "pr-9",
             error &&
@@ -69,11 +69,13 @@ export function FormField({
         </p>
       )}
 
-      {error && (
-        <p id={errorId} role="alert" className="text-xs font-medium text-destructive">
-          {error}
-        </p>
-      )}
+      <div aria-live="polite" aria-atomic="true">
+        {error && (
+          <p id={errorId} className="text-xs font-medium text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

@@ -11,6 +11,8 @@ import {
 } from "recharts";
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -45,6 +47,7 @@ export function RegistrationsLineChart({
         <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
         <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
         <Line
           type="monotone"
           dataKey="count"
@@ -70,6 +73,7 @@ export function PaymentsByMethodChart({
         <XAxis dataKey="method" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
         <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
         <Bar dataKey="count" fill="var(--color-count)" radius={6} />
       </BarChart>
     </ChartContainer>
@@ -89,6 +93,7 @@ export function AffluenceByUfrChart({
         <XAxis dataKey="code" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
         <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
         <Bar dataKey="students" fill="var(--color-students)" radius={6} />
       </BarChart>
     </ChartContainer>
@@ -108,6 +113,7 @@ export function PredictionsLineChart({
         <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
         <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
         <Line
           type="monotone"
           dataKey="valeur"

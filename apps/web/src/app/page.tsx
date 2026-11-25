@@ -16,21 +16,21 @@ export default function HomePage() {
   const formattedFee = REGISTRATION_FEE_FCFA.toLocaleString("fr-FR");
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       {/* En-tête 56 px */}
       <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <BrandLogo className="h-8 w-8" />
-            <span className="text-sm font-semibold tracking-tight text-foreground">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 md:px-6">
+          <Link href="/" className="flex min-w-0 items-center gap-2">
+            <BrandLogo className="h-8 w-8 shrink-0" />
+            <span className="truncate text-sm font-semibold tracking-tight text-foreground">
               SmartInscription IA
             </span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Link
               href="/connexion"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "rounded-lg")}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "rounded-lg px-2.5 sm:px-3")}
             >
               Connexion
             </Link>
@@ -38,7 +38,7 @@ export default function HomePage() {
               href="/inscription"
               className={cn(
                 buttonVariants({ size: "sm" }),
-                "rounded-lg bg-brand text-brand-foreground hover:bg-brand-dark"
+                "rounded-lg bg-brand px-3 text-brand-foreground hover:bg-brand-dark"
               )}
             >
               S&apos;inscrire
@@ -48,7 +48,7 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1">
-        <section className="mx-auto max-w-6xl px-4 py-12 md:px-6 md:py-16">
+        <section className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-16">
           <div className="mx-auto max-w-2xl space-y-4 text-center">
             <Badge
               variant="secondary"
@@ -57,7 +57,7 @@ export default function HomePage() {
               Inscriptions universitaires au Sénégal
             </Badge>
 
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
               Payez et gérez votre inscription universitaire en toute simplicité
             </h1>
 
@@ -67,12 +67,12 @@ export default function HomePage() {
               ligne.
             </p>
 
-            <div className="flex flex-col justify-center gap-3 pt-2 sm:flex-row">
+            <div className="flex flex-col justify-center gap-2.5 pt-2 sm:flex-row sm:gap-3">
               <Link
                 href="/inscription"
                 className={cn(
                   buttonVariants({ size: "default" }),
-                  "h-10 rounded-lg bg-brand px-5 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
+                  "w-full rounded-lg bg-brand px-5 text-sm font-medium text-brand-foreground hover:bg-brand-dark sm:w-auto"
                 )}
               >
                 Commencer mon inscription
@@ -82,7 +82,7 @@ export default function HomePage() {
                 href="/connexion"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "default" }),
-                  "h-10 rounded-lg bg-surface px-5 text-sm font-medium"
+                  "w-full rounded-lg bg-surface px-5 text-sm font-medium sm:w-auto"
                 )}
               >
                 Se connecter
@@ -90,7 +90,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-3">
+          <div className="mt-8 grid gap-3 sm:mt-12 sm:grid-cols-3 sm:gap-4">
             <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
               <CardHeader className="space-y-2.5 p-5 pb-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
@@ -133,10 +133,17 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-border bg-surface py-5">
+      <footer className="border-t border-border bg-surface py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 text-xs text-muted-foreground sm:flex-row md:px-6">
           <span>© {new Date().getFullYear()} SmartInscription IA</span>
-          <span>Plateforme de paiement et de gestion des inscriptions universitaires</span>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link href="/confidentialite" className="font-medium text-foreground hover:underline">
+              Politique de confidentialité
+            </Link>
+            <Link href="/connexion" className="hover:underline">
+              Connexion
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

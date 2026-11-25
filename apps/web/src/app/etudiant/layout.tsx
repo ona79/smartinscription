@@ -2,6 +2,7 @@ import { ROLE_LABELS_FR, ROLES } from "@smartinscription/shared";
 import { PortalShell, type PortalNavItem } from "@/components/layout/portal-shell";
 import { requireRole } from "@/features/auth/lib/session";
 import { LazyFaqChatbotWidget } from "@/features/ia/components/lazy-faq-chatbot-widget";
+import { prisma } from "@/lib/prisma";
 
 const STUDENT_NAV_ITEMS: PortalNavItem[] = [
   { href: "/etudiant", label: "Tableau de bord", shortLabel: "Accueil", icon: "dashboard" },
@@ -13,6 +14,9 @@ const STUDENT_NAV_ITEMS: PortalNavItem[] = [
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRole([ROLES.STUDENT]);
+  const unreadCount = await prisma.notification.count({
+    where: { userId: user.id, lu: false },
+  });
 
   return (
     <PortalShell
@@ -21,6 +25,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
       userName={`${user.prenom} ${user.nom}`}
       userEmail={user.email}
       navItems={STUDENT_NAV_ITEMS}
+      unreadNotificationsCount={unreadCount}
+      notificationsHref="/etudiant#notifications"
+      showFaqTrigger
     >
       {children}
       <LazyFaqChatbotWidget />

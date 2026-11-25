@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import {
   AlertCircle,
+  Check,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -15,19 +16,24 @@ import {
 } from "lucide-react";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import { registerAction, type AuthActionState } from "@/features/auth/actions";
+import { registerAction } from "@/features/auth/actions";
+import { useFormActionToast } from "@/hooks/use-action-toast";
+import { cn } from "@/lib/utils";
 
-const initialState: AuthActionState = {};
-
-/** Formulaire d'inscription étudiant en deux colonnes sur desktop avec validation claire. */
+/** Formulaire d'inscription étudiant avec règles mot de passe en direct, téléphone Sénégal et consentement. */
 export function RegisterForm() {
-  const [state, formAction, isPending] = useActionState(registerAction, initialState);
+  const { state, formAction, isPending, fieldErrors } = useFormActionToast(registerAction);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const hasMinLength = password.length >= 8;
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
 
   return (
     <form action={formAction} className="space-y-4">
-      {state.error && (
+      {state && !state.ok && (
         <div
           role="alert"
           className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
@@ -37,13 +43,13 @@ export function RegisterForm() {
         </div>
       )}
 
-      {state.success && (
+      {state?.ok && state.message && (
         <div
           role="status"
           className="flex items-start gap-2.5 rounded-xl border border-success/30 bg-success/5 px-4 py-3 text-sm text-success"
         >
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{state.success}</span>
+          <span>{state.message}</span>
         </div>
       )}
 
@@ -54,7 +60,9 @@ export function RegisterForm() {
           label="Prénom"
           placeholder="Cheikh"
           autoComplete="given-name"
+          enterKeyHint="next"
           required
+          error={fieldErrors.prenom}
           icon={<User className="h-4 w-4" />}
         />
         <FormField
@@ -63,7 +71,9 @@ export function RegisterForm() {
           label="Nom"
           placeholder="Fall"
           autoComplete="family-name"
+          enterKeyHint="next"
           required
+          error={fieldErrors.nom}
           icon={<User className="h-4 w-4" />}
         />
       </div>
@@ -75,7 +85,10 @@ export function RegisterForm() {
         label="Téléphone (optionnel)"
         placeholder="+221 77 000 00 00"
         autoComplete="tel"
-        hint="Utile pour recevoir les alertes SMS de validation."
+        inputMode="tel"
+        enterKeyHint="next"
+        hint="Format Sénégal : +221 suivi de 70, 75, 76, 77 ou 78 et 7 chiffres."
+        error={fieldErrors.telephone}
         icon={<Phone className="h-4 w-4" />}
       />
 
@@ -86,34 +99,56 @@ export function RegisterForm() {
         label="Adresse e-mail"
         placeholder="cheikh.fall@exemple.sn"
         autoComplete="email"
+        inputMode="email"
+        autoCapitalize="off"
+        autoCorrect="off"
+        enterKeyHint="next"
         required
+        error={fieldErrors.email}
         icon={<Mail className="h-4 w-4" />}
       />
 
-      <FormField
-        id="password"
-        name="password"
-        type={showPassword ? "text" : "password"}
-        label="Mot de passe"
-        placeholder="••••••••"
-        autoComplete="new-password"
-        required
-        minLength={6}
-        hint="Au moins 6 caractères."
-        icon={<Lock className="h-4 w-4" />}
-        trailing={
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            aria-label={
-              showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
-            }
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      <div className="space-y-2">
+        <FormField
+          id="password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          label="Mot de passe"
+          placeholder="••••••••"
+          autoComplete="new-password"
+          enterKeyHint="next"
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={fieldErrors.password}
+          icon={<Lock className="h-4 w-4" />}
+          trailing={
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={
+                showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
+              }
+              className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          }
+        />
+
+        <ul className="space-y-1 text-xs" aria-live="polite">
+          <li
+            className={cn(
+              "flex items-center gap-1.5",
+              hasMinLength ? "text-success" : "text-muted-foreground"
+            )}
           >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        }
-      />
+            <Check className="h-3.5 w-3.5 shrink-0" />
+            <span>Au moins 8 caractères</span>
+          </li>
+        </ul>
+      </div>
 
       <FormField
         id="confirmPassword"
@@ -122,8 +157,17 @@ export function RegisterForm() {
         label="Confirmer le mot de passe"
         placeholder="••••••••"
         autoComplete="new-password"
+        enterKeyHint="done"
         required
-        minLength={6}
+        minLength={8}
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        error={fieldErrors.confirmPassword}
+        hint={
+          confirmPassword.length > 0 && passwordsMatch
+            ? "Les mots de passe correspondent."
+            : undefined
+        }
         icon={<Lock className="h-4 w-4" />}
         trailing={
           <button
@@ -134,18 +178,46 @@ export function RegisterForm() {
                 ? "Masquer la confirmation du mot de passe"
                 : "Afficher la confirmation du mot de passe"
             }
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         }
       />
 
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="mt-1 h-10 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
-        >
+      <div className="space-y-1.5">
+        <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-muted/20 p-3 text-xs leading-relaxed text-foreground">
+          <input
+            type="checkbox"
+            name="acceptPrivacy"
+            required
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-brand"
+          />
+          <span>
+            J&apos;ai lu et j&apos;accepte la{" "}
+            <Link
+              href="/confidentialite"
+              className="font-semibold text-brand underline-offset-4 hover:underline"
+            >
+              politique de confidentialité
+            </Link>
+            .
+          </span>
+        </label>
+        <div aria-live="polite" aria-atomic="true">
+          {fieldErrors.acceptPrivacy && (
+            <p className="text-xs font-medium text-destructive">
+              {fieldErrors.acceptPrivacy}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <Button
+        type="submit"
+        disabled={isPending}
+        className="mt-1 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
+      >
         {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -46,11 +46,11 @@ export async function requireRole(allowedRoles: Role[]) {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/connexion");
+    redirect("/connexion?raison=session-expiree");
   }
 
   if (!allowedRoles.includes(user.role)) {
-    redirect(ROLE_DEFAULT_ROUTES[user.role]);
+    redirect(`${ROLE_DEFAULT_ROUTES[user.role]}?raison=acces-refuse`);
   }
 
   return user;

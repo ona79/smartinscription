@@ -17,6 +17,15 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: "/logo.svg",
+    apple: "/branding/logo_uasz.png",
+  },
+  openGraph: {
+    title: "SmartInscription IA — Inscriptions universitaires",
+    description:
+      "Payez vos frais, déposez vos pièces et suivez votre dossier universitaire en ligne.",
+    type: "website",
+    locale: "fr_SN",
+    siteName: "SmartInscription IA",
   },
   appleWebApp: {
     capable: true,
@@ -29,6 +38,7 @@ export const viewport: Viewport = {
   themeColor: "#0f766e",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

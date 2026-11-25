@@ -125,34 +125,55 @@ async function AdminStatsContent() {
         </Card>
 
         <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
-          <CardHeader className="p-5 pb-3">
+          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-3">
             <CardTitle className="text-base font-semibold">Effectifs par UFR</CardTitle>
           </CardHeader>
-          <CardContent className="p-5 pt-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>UFR</TableHead>
-                  <TableHead className="text-right">Filières</TableHead>
-                  <TableHead className="text-right">Étudiants</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ufrs.map((ufr) => (
-                  <TableRow key={ufr.id}>
-                    <TableCell className="font-mono text-xs">{ufr.code}</TableCell>
-                    <TableCell className="max-w-[180px] truncate font-medium" title={ufr.nom}>
-                      {ufr.nom}
-                    </TableCell>
-                    <TableCell className="text-right">{ufr._count.filieres}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {ufr._count.students}
-                    </TableCell>
+          <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+            <div className="space-y-2 md:hidden">
+              {ufrs.map((ufr) => (
+                <div
+                  key={ufr.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background/50 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-muted-foreground">{ufr.code}</p>
+                    <p className="text-sm font-medium text-foreground">{ufr.nom}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {ufr._count.filieres} filière(s)
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-base font-semibold text-foreground">
+                    {ufr._count.students}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>UFR</TableHead>
+                    <TableHead className="text-right">Filières</TableHead>
+                    <TableHead className="text-right">Étudiants</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {ufrs.map((ufr) => (
+                    <TableRow key={ufr.id}>
+                      <TableCell className="font-mono text-xs">{ufr.code}</TableCell>
+                      <TableCell className="max-w-[180px] truncate font-medium" title={ufr.nom}>
+                        {ufr.nom}
+                      </TableCell>
+                      <TableCell className="text-right">{ufr._count.filieres}</TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {ufr._count.students}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
