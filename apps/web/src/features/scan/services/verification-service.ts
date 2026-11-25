@@ -6,6 +6,8 @@ import {
   type RegistrationStatus,
   type Role,
 } from "@smartinscription/shared";
+import { recordActivity } from "@/features/activity/record-activity";
+import { triggerAnomalyAnalysis } from "@/features/ia/trigger-anomaly-analysis";
 import { prisma } from "@/lib/prisma";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -142,6 +144,14 @@ export async function verifyReceiptByQrToken(
       : regStatus === REGISTRATION_STATUSES.DOCS_COMPLETE
         ? "COMPLETE"
         : "INCOMPLETE";
+
+  if (!deps.db) {
+    await recordActivity("CHECK_IN", student.userId, {
+      registrationId: reg.id,
+      scannedBy: params.requesterId,
+    });
+    await triggerAnomalyAnalysis(reg.id);
+  }
 
   return {
     valid: true,

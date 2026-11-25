@@ -4,6 +4,7 @@ import { ROLE_DEFAULT_ROUTES, ROLES } from "@smartinscription/shared";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { recordActivity } from "@/features/activity/record-activity";
 import {
   getUnlockedTestAccounts,
   type TestAccountItem,
@@ -74,6 +75,8 @@ export async function loginAction(
     where: { id: data.user.id },
     select: { role: true },
   });
+
+  await recordActivity("LOGIN", data.user.id);
 
   const targetRoute = dbUser ? ROLE_DEFAULT_ROUTES[dbUser.role] : ROLE_DEFAULT_ROUTES.STUDENT;
   redirect(targetRoute);
