@@ -98,15 +98,15 @@ export function TestAccountsHelper({ onSelectAccount }: TestAccountsHelperProps)
               <p className="text-xs font-semibold text-foreground">
                 Cliquez sur un compte pour pré-remplir :
               </p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {accounts.map((acc) => (
                   <div
                     key={acc.email}
-                    className="flex flex-col justify-between gap-2 rounded-xl border border-border/80 bg-surface p-2.5 text-xs"
+                    className="flex min-w-0 flex-col justify-between gap-1.5 rounded-lg border border-border/80 bg-surface p-2 text-xs"
                   >
                     <div className="min-w-0 space-y-1">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+                      <div className="flex items-center justify-between gap-1">
+                        <Badge variant="secondary" className="rounded-full px-1.5 py-0 text-[10px]">
                           {acc.roleLabel}
                         </Badge>
                         <Button
@@ -114,12 +114,15 @@ export function TestAccountsHelper({ onSelectAccount }: TestAccountsHelperProps)
                           variant="outline"
                           size="sm"
                           onClick={() => onSelectAccount(acc.email, acc.password)}
-                          className="h-6 shrink-0 rounded-lg px-2 text-[11px]"
+                          className="h-5 shrink-0 rounded-md px-1.5 text-[10px]"
                         >
                           Remplir
                         </Button>
                       </div>
-                      <p className="truncate font-mono text-[11px] text-foreground">
+                      <p
+                        title={acc.email}
+                        className="truncate font-mono text-[10px] text-foreground"
+                      >
                         {acc.email}
                       </p>
                       <p className="truncate font-mono text-[10px] text-muted-foreground">
