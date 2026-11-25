@@ -35,14 +35,14 @@ describe("Garde du seed (assertSeedAllowed & resolveSeedPasswords)", () => {
 });
 
 describe("Garde des comptes de test (isTestAccountsEnabled & getUnlockedTestAccounts)", () => {
-  it("désactive toujours les comptes de test en production", () => {
+  it("désactive les comptes de test si ENABLE_TEST_ACCOUNTS n'est pas true", () => {
+    expect(isTestAccountsEnabled({ NODE_ENV: "production" })).toBe(false);
     expect(
-      isTestAccountsEnabled({ NODE_ENV: "production", ENABLE_TEST_ACCOUNTS: "true" })
+      isTestAccountsEnabled({ NODE_ENV: "production", ENABLE_TEST_ACCOUNTS: "false" })
     ).toBe(false);
 
     const res = getUnlockedTestAccounts("code", {
       NODE_ENV: "production",
-      ENABLE_TEST_ACCOUNTS: "true",
       TEST_ACCOUNTS_PASSCODE: "code",
     });
     expect(res.ok).toBe(false);

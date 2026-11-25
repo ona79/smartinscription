@@ -6,11 +6,11 @@ export interface TestAccountItem {
   password: string;
 }
 
-/** Vérifie si l'aide aux comptes de test est autorisée (jamais en production). */
+/** Vérifie si l'aide aux comptes de test est activée via ENABLE_TEST_ACCOUNTS="true". */
 export function isTestAccountsEnabled(
   env: Record<string, string | undefined> = process.env
 ): boolean {
-  return env.NODE_ENV !== "production" && env.ENABLE_TEST_ACCOUNTS === "true";
+  return env.ENABLE_TEST_ACCOUNTS === "true";
 }
 
 /** Vérifie le code d'accès et construit la liste des comptes depuis les variables d'env. */
