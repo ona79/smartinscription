@@ -70,42 +70,28 @@ export async function generateIaPredictionsAction(): Promise<IaActionResult> {
 
   const ufrByCode = new Map(ufrs.map((u) => [u.code, u.id]));
 
-  await prisma.$transaction(async (tx) => {
-    for (const item of affluence.forecasts) {
-      const targetDate = new Date(`${item.date}T00:00:00.000Z`);
-      await tx.prediction.create({
-        data: {
-          type: "AFFLUENCE_JOUR",
-          dateCible: targetDate,
-          valeur: item.predicted_registrations,
-        },
-      });
-    }
+  const now = new Date();
+  const predictionsData = [
+    ...affluence.forecasts.map((item) => ({
+      type: "AFFLUENCE_JOUR",
+      dateCible: new Date(`${item.date}T00:00:00.000Z`),
+      valeur: item.predicted_registrations,
+    })),
+    ...affluence.hourly_forecasts.map((hourItem) => ({
+      type: "AFFLUENCE_HEURE",
+      dateCible: new Date(`${hourItem.date}T00:00:00.000Z`),
+      heure: hourItem.heure,
+      valeur: hourItem.predicted_registrations,
+    })),
+    ...staffing.ufr_staffing.map((ufrItem) => ({
+      type: "BESOIN_AGENTS",
+      dateCible: now,
+      ufrId: ufrByCode.get(ufrItem.ufr_code) ?? null,
+      valeur: ufrItem.recommended_agents_per_day,
+    })),
+  ];
 
-    for (const hourItem of affluence.hourly_forecasts) {
-      const targetDate = new Date(`${hourItem.date}T00:00:00.000Z`);
-      await tx.prediction.create({
-        data: {
-          type: "AFFLUENCE_HEURE",
-          dateCible: targetDate,
-          heure: hourItem.heure,
-          valeur: hourItem.predicted_registrations,
-        },
-      });
-    }
-
-    for (const ufrItem of staffing.ufr_staffing) {
-      const ufrId = ufrByCode.get(ufrItem.ufr_code) ?? null;
-      await tx.prediction.create({
-        data: {
-          type: "BESOIN_AGENTS",
-          dateCible: new Date(),
-          ufrId,
-          valeur: ufrItem.recommended_agents_per_day,
-        },
-      });
-    }
-  });
+  await prisma.prediction.createMany({ data: predictionsData });
 
   revalidatePath("/admin/statistiques");
   return {
