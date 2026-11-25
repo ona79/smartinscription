@@ -151,54 +151,77 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2.5">
+    <form onSubmit={handleSubmit} className="space-y-2">
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive"
         >
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <FormField
-        id="numeroEtudiant"
-        name="numeroEtudiant"
-        label="Numéro étudiant"
-        placeholder="Ex : SN-2026-0042"
-        required
-        error={fieldErrors.numeroEtudiant}
-        className="sm:h-9"
-        icon={<Hash className="h-4 w-4" />}
-      />
-
-      <div className="space-y-1">
-        <Label htmlFor="ufrId" className="text-xs font-medium text-foreground">
-          UFR
-        </Label>
-        <select
-          id="ufrId"
-          name="ufrId"
+      {/* Ligne 1 : N° étudiant + Niveau */}
+      <div className="grid grid-cols-2 gap-2">
+        <FormField
+          id="numeroEtudiant"
+          name="numeroEtudiant"
+          label="N° étudiant"
+          placeholder="SN-2026-0042"
           required
-          value={selectedUfrId}
-          onChange={(e) => setSelectedUfrId(e.target.value)}
-          className="flex h-11 w-full rounded-lg border border-input bg-surface px-2.5 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:text-sm"
-        >
-          <option value="" disabled>
-            Sélectionnez votre UFR
-          </option>
-          {ufrs.map((ufr) => (
-            <option key={ufr.id} value={ufr.id}>
-              {ufr.code} — {ufr.nom}
-            </option>
-          ))}
-        </select>
+          error={fieldErrors.numeroEtudiant}
+          className="h-10 sm:h-8"
+          icon={<Hash className="h-3.5 w-3.5" />}
+        />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="niveau" className="text-[13px] font-medium text-foreground">
+            Niveau
+          </Label>
+          <select
+            id="niveau"
+            name="niveau"
+            required
+            defaultValue="L1"
+            className="flex h-10 w-full rounded-lg border border-input bg-surface px-2 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-8 sm:text-xs"
+          >
+            {ACADEMIC_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {ACADEMIC_LEVEL_LABELS_FR[level]}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor="filiereId" className="text-xs font-medium text-foreground">
+      {/* Ligne 2 : UFR + Filière */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="ufrId" className="text-[13px] font-medium text-foreground">
+            UFR
+          </Label>
+          <select
+            id="ufrId"
+            name="ufrId"
+            required
+            value={selectedUfrId}
+            onChange={(e) => setSelectedUfrId(e.target.value)}
+            className="flex h-10 w-full rounded-lg border border-input bg-surface px-2 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-8 sm:text-xs"
+          >
+            <option value="" disabled>
+              UFR...
+            </option>
+            {ufrs.map((ufr) => (
+              <option key={ufr.id} value={ufr.id}>
+                {ufr.code} — {ufr.nom}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="filiereId" className="text-[13px] font-medium text-foreground">
             Filière
           </Label>
           <select
@@ -208,10 +231,10 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             required
             defaultValue={filieres[0]?.id ?? ""}
             disabled={filieres.length === 0}
-            className="flex h-11 w-full rounded-lg border border-input bg-surface px-2.5 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 sm:h-9 sm:text-sm"
+            className="flex h-10 w-full rounded-lg border border-input bg-surface px-2 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 sm:h-8 sm:text-xs"
           >
             <option value="" disabled>
-              Sélectionnez une filière
+              Filière...
             </option>
             {filieres.map((filiere) => (
               <option key={filiere.id} value={filiere.id}>
@@ -223,71 +246,57 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             <p className="text-xs font-medium text-destructive">{fieldErrors.filiereId}</p>
           )}
         </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="niveau" className="text-xs font-medium text-foreground">
-            Niveau
-          </Label>
-          <select
-            id="niveau"
-            name="niveau"
-            required
-            defaultValue="L1"
-            className="flex h-11 w-full rounded-lg border border-input bg-surface px-2.5 text-base text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:text-sm"
-          >
-            {ACADEMIC_LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {ACADEMIC_LEVEL_LABELS_FR[level]}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+      {/* Ligne 3 : Date + Lieu de naissance */}
+      <div className="grid grid-cols-2 gap-2">
         <FormField
           id="birthDate"
           name="birthDate"
           type="date"
-          label="Date de naissance"
+          label="Date naissance"
           required
           error={fieldErrors.birthDate}
-          className="sm:h-9"
-          icon={<Calendar className="h-4 w-4" />}
+          className="h-10 sm:h-8"
+          icon={<Calendar className="h-3.5 w-3.5" />}
         />
         <FormField
           id="birthPlace"
           name="birthPlace"
-          label="Lieu de naissance"
-          placeholder="Ex : Ziguinchor"
+          label="Lieu naissance"
+          placeholder="Ziguinchor"
           required
           error={fieldErrors.birthPlace}
-          className="sm:h-9"
-          icon={<MapPin className="h-4 w-4" />}
+          className="h-10 sm:h-8"
+          icon={<MapPin className="h-3.5 w-3.5" />}
         />
+      </div>
+
+      {/* Ligne 4 : Nationalité + Photo optionnelle */}
+      <div className="grid grid-cols-2 items-end gap-2">
         <FormField
           id="nationality"
           name="nationality"
           label="Nationalité"
-          placeholder="Ex : Sénégalaise"
+          placeholder="Sénégalaise"
           defaultValue="Sénégalaise"
           required
           error={fieldErrors.nationality}
-          className="sm:h-9"
-          icon={<Globe className="h-4 w-4" />}
+          className="h-10 sm:h-8"
+          icon={<Globe className="h-3.5 w-3.5" />}
         />
-      </div>
 
-      <div className="space-y-1 rounded-lg border border-border bg-muted/20 p-2.5">
-        <p className="text-xs font-medium text-foreground">
-          Photo d&apos;identité (optionnelle)
-        </p>
-        <PhotoUploader
-          mode="deferred"
-          fullWidthMobile
-          label="Ajouter une photo"
-          onFileSelected={(file) => setSelectedPhoto(file)}
-        />
+        <div className="space-y-1.5">
+          <span className="block text-[13px] font-medium text-foreground">
+            Photo (opt.)
+          </span>
+          <PhotoUploader
+            mode="deferred"
+            fullWidthMobile
+            label="Photo"
+            onFileSelected={(file) => setSelectedPhoto(file)}
+          />
+        </div>
       </div>
 
       <Button
