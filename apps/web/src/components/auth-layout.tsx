@@ -80,8 +80,8 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
       </aside>
 
       {/* Zone formulaire */}
-      <main className="flex flex-col justify-center bg-surface px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-8 lg:col-span-7 lg:px-14">
-        <div className="mx-auto w-full max-w-md space-y-5">
+      <main className="flex flex-col justify-center bg-surface px-4 py-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:col-span-7 lg:px-14">
+        <div className="mx-auto w-full max-w-md space-y-3 sm:space-y-5">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="inline-flex min-h-11 items-center gap-2 lg:hidden">
               <BrandLogo className="h-8 w-8 shrink-0" />

@@ -32,13 +32,13 @@ export function RegisterForm() {
   const passwordsMatch = password.length > 0 && password === confirmPassword;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-2.5 sm:space-y-3.5">
       {state && !state.ok && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{state.error}</span>
         </div>
       )}
@@ -46,14 +46,14 @@ export function RegisterForm() {
       {state?.ok && state.message && (
         <div
           role="status"
-          className="flex items-start gap-2.5 rounded-xl border border-success/30 bg-success/5 px-4 py-3 text-sm text-success"
+          className="flex items-start gap-2 rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-success"
         >
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{state.message}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2.5">
         <FormField
           id="prenom"
           name="prenom"
@@ -63,6 +63,7 @@ export function RegisterForm() {
           enterKeyHint="next"
           required
           error={fieldErrors.prenom}
+          className="h-10"
           icon={<User className="h-4 w-4" />}
         />
         <FormField
@@ -74,41 +75,45 @@ export function RegisterForm() {
           enterKeyHint="next"
           required
           error={fieldErrors.nom}
+          className="h-10"
           icon={<User className="h-4 w-4" />}
         />
       </div>
 
-      <FormField
-        id="telephone"
-        name="telephone"
-        type="tel"
-        label="Téléphone (optionnel)"
-        placeholder="+221 77 000 00 00"
-        autoComplete="tel"
-        inputMode="tel"
-        enterKeyHint="next"
-        hint="Format Sénégal : +221 suivi de 70, 75, 76, 77 ou 78 et 7 chiffres."
-        error={fieldErrors.telephone}
-        icon={<Phone className="h-4 w-4" />}
-      />
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        <FormField
+          id="telephone"
+          name="telephone"
+          type="tel"
+          label="Téléphone (opt.)"
+          placeholder="+221 77 000 00 00"
+          autoComplete="tel"
+          inputMode="tel"
+          enterKeyHint="next"
+          error={fieldErrors.telephone}
+          className="h-10"
+          icon={<Phone className="h-4 w-4" />}
+        />
 
-      <FormField
-        id="email"
-        name="email"
-        type="email"
-        label="Adresse e-mail"
-        placeholder="cheikh.fall@exemple.sn"
-        autoComplete="email"
-        inputMode="email"
-        autoCapitalize="off"
-        autoCorrect="off"
-        enterKeyHint="next"
-        required
-        error={fieldErrors.email}
-        icon={<Mail className="h-4 w-4" />}
-      />
+        <FormField
+          id="email"
+          name="email"
+          type="email"
+          label="Adresse e-mail"
+          placeholder="cheikh@exemple.sn"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="off"
+          autoCorrect="off"
+          enterKeyHint="next"
+          required
+          error={fieldErrors.email}
+          className="h-10"
+          icon={<Mail className="h-4 w-4" />}
+        />
+      </div>
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2.5">
         <FormField
           id="password"
           name="password"
@@ -122,6 +127,7 @@ export function RegisterForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={fieldErrors.password}
+          className="h-10"
           icon={<Lock className="h-4 w-4" />}
           trailing={
             <button
@@ -130,71 +136,73 @@ export function RegisterForm() {
               aria-label={
                 showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
               }
-              className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           }
         />
 
-        <ul className="space-y-1 text-xs" aria-live="polite">
-          <li
-            className={cn(
-              "flex items-center gap-1.5",
-              hasMinLength ? "text-success" : "text-muted-foreground"
-            )}
-          >
-            <Check className="h-3.5 w-3.5 shrink-0" />
-            <span>Au moins 8 caractères</span>
-          </li>
-        </ul>
+        <FormField
+          id="confirmPassword"
+          name="confirmPassword"
+          type={showConfirm ? "text" : "password"}
+          label="Confirmation"
+          placeholder="••••••••"
+          autoComplete="new-password"
+          enterKeyHint="done"
+          required
+          minLength={8}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          error={fieldErrors.confirmPassword}
+          className="h-10"
+          icon={<Lock className="h-4 w-4" />}
+          trailing={
+            <button
+              type="button"
+              onClick={() => setShowConfirm((prev) => !prev)}
+              aria-label={
+                showConfirm
+                  ? "Masquer la confirmation du mot de passe"
+                  : "Afficher la confirmation du mot de passe"
+              }
+              className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          }
+        />
       </div>
 
-      <FormField
-        id="confirmPassword"
-        name="confirmPassword"
-        type={showConfirm ? "text" : "password"}
-        label="Confirmer le mot de passe"
-        placeholder="••••••••"
-        autoComplete="new-password"
-        enterKeyHint="done"
-        required
-        minLength={8}
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        error={fieldErrors.confirmPassword}
-        hint={
-          confirmPassword.length > 0 && passwordsMatch
-            ? "Les mots de passe correspondent."
-            : undefined
-        }
-        icon={<Lock className="h-4 w-4" />}
-        trailing={
-          <button
-            type="button"
-            onClick={() => setShowConfirm((prev) => !prev)}
-            aria-label={
-              showConfirm
-                ? "Masquer la confirmation du mot de passe"
-                : "Afficher la confirmation du mot de passe"
-            }
-            className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        }
-      />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" aria-live="polite">
+        <span
+          className={cn(
+            "flex items-center gap-1",
+            hasMinLength ? "text-success" : "text-muted-foreground"
+          )}
+        >
+          <Check className="h-3.5 w-3.5 shrink-0" />
+          8 caractères min.
+        </span>
+        {confirmPassword.length > 0 && passwordsMatch && (
+          <span className="flex items-center gap-1 text-success">
+            <Check className="h-3.5 w-3.5 shrink-0" />
+            Identiques
+          </span>
+        )}
+      </div>
 
-      <div className="space-y-1.5">
-        <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-muted/20 p-3 text-xs leading-relaxed text-foreground">
+      <div className="space-y-1">
+        <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-border bg-muted/20 px-2.5 py-2 text-xs leading-snug text-foreground">
           <input
             type="checkbox"
             name="acceptPrivacy"
             required
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-brand"
+            className="h-4 w-4 shrink-0 rounded border-input accent-brand"
           />
           <span>
-            J&apos;ai lu et j&apos;accepte la{" "}
+            J&apos;accepte la{" "}
             <Link
               href="/confidentialite"
               className="font-semibold text-brand underline-offset-4 hover:underline"
