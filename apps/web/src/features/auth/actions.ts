@@ -111,7 +111,7 @@ export async function registerAction(
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  let createdUserId: string | null = null;
+  let createdUserId: string;
   let hasSession = false;
 
   // En local / sans validation e-mail : crée l'utilisateur déjà confirmé via la clé service role
