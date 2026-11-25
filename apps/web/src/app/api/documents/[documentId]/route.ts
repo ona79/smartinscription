@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
-import { ROLES } from "@smartinscription/shared";
+import { DOCUMENT_TYPES } from "@smartinscription/shared";
 import { getCurrentUser } from "@/features/auth/lib/session";
-import { getSignedDocumentUrl } from "@/features/documents/services/document-service";
-import { prisma } from "@/lib/prisma";
+import { authorizeAndGetSignedDocumentUrl } from "@/features/documents/services/document-service";
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
 
-function detectDocumentKind(storagePath: string): "image" | "pdf" {
-  const ext = storagePath.split(".").pop()?.toLowerCase() ?? "";
-  return IMAGE_EXTENSIONS.has(ext) ? "image" : "pdf";
+function detectDocumentKind(
+  fileName: string,
+  docType: string
+): "image" | "pdf" {
+  if (docType === DOCUMENT_TYPES.PHOTO) return "image";
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (IMAGE_EXTENSIONS.has(ext)) return "image";
+  return ext === "pdf" ? "pdf" : "image";
 }
 
-/** Téléchargement / aperçu sécurisé d'un document privé (propriétaire, AGENT ou ADMIN). */
+/** Téléchargement / aperçu sécurisé d'un document privé via URL signée courte durée. */
 export async function GET(
   request: Request,
   context: { params: Promise<{ documentId: string }> }
@@ -22,45 +26,40 @@ export async function GET(
   }
 
   const { documentId } = await context.params;
-  const document = await prisma.document.findUnique({
-    where: { id: documentId },
-    select: {
-      url: true,
-      registration: {
-        select: {
-          student: { select: { userId: true } },
-        },
-      },
-    },
-  });
 
-  if (!document) {
-    return NextResponse.json({ error: "Document introuvable." }, { status: 404 });
-  }
-
-  const isOwner = document.registration.student.userId === user.id;
-  const isStaff = user.role === ROLES.AGENT || user.role === ROLES.ADMIN;
-
-  if (!isOwner && !isStaff) {
-    return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
+  let result: Awaited<ReturnType<typeof authorizeAndGetSignedDocumentUrl>>;
+  try {
+    result = await authorizeAndGetSignedDocumentUrl({
+      documentId,
+      requesterId: user.id,
+      requesterRole: user.role,
+      expiresInSeconds: 600,
+    });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (code === "NOT_FOUND") {
+      return NextResponse.json({ error: "Document introuvable." }, { status: 404 });
+    }
+    if (code === "FORBIDDEN") {
+      return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
+    }
+    return NextResponse.json({ error: "Erreur d'accès." }, { status: 500 });
   }
 
   const { searchParams } = new URL(request.url);
   const wantsJson = searchParams.get("format") === "json";
-  const fileName = document.url.split("/").pop() ?? "document";
-  const kind = detectDocumentKind(document.url);
+  const kind = detectDocumentKind(result.fileName, result.type);
 
-  if (wantsJson && document.url.startsWith("demo/")) {
+  if (wantsJson && result.isDemo) {
     return NextResponse.json({
       isDemo: true,
       url: null,
-      fileName,
+      fileName: result.fileName,
       kind,
     });
   }
 
-  const signedUrl = await getSignedDocumentUrl(document.url);
-  if (!signedUrl) {
+  if (!result.url) {
     return NextResponse.json(
       { error: "Impossible de générer le lien d'aperçu." },
       { status: 500 }
@@ -70,11 +69,11 @@ export async function GET(
   if (wantsJson) {
     return NextResponse.json({
       isDemo: false,
-      url: signedUrl,
-      fileName,
+      url: result.url,
+      fileName: result.fileName,
       kind,
     });
   }
 
-  return NextResponse.redirect(signedUrl);
+  return NextResponse.redirect(result.url);
 }

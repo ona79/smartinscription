@@ -109,12 +109,15 @@ model Filiere {
 }
 
 model Student {
-  id             String @id @default(cuid())
-  userId         String @unique @db.Uuid
-  numeroEtudiant String @unique
+  id             String    @id @default(cuid())
+  userId         String    @unique @db.Uuid
+  numeroEtudiant String    @unique
   ufrId          String
   filiereId      String
   niveau         String
+  birthDate      DateTime?
+  birthPlace     String?
+  nationality    String?
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   ufr           UFR            @relation(fields: [ufrId], references: [id])

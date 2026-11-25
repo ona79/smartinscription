@@ -180,13 +180,20 @@ async function main() {
     if (spec.role === Role.STUDENT && firstUfrId && firstFiliereId) {
       const student = await prisma.student.upsert({
         where: { userId: user.id },
-        update: {},
+        update: {
+          birthDate: new Date("2004-05-14T00:00:00.000Z"),
+          birthPlace: "Ziguinchor",
+          nationality: "Sénégalaise",
+        },
         create: {
           userId: user.id,
           numeroEtudiant: "SN-2026-0001",
           ufrId: firstUfrId,
           filiereId: firstFiliereId,
           niveau: "L1",
+          birthDate: new Date("2004-05-14T00:00:00.000Z"),
+          birthPlace: "Ziguinchor",
+          nationality: "Sénégalaise",
         },
       });
 

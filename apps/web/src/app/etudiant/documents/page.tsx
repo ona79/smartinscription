@@ -79,6 +79,9 @@ export default async function StudentDocumentsPage() {
               <DocumentUploadCard
                 key={docType}
                 type={docType}
+                isRegistrationValidated={
+                  registration.statut === REGISTRATION_STATUSES.VALIDATED
+                }
                 existingDoc={
                   existing
                     ? {

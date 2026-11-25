@@ -1,46 +1,156 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ACADEMIC_LEVEL_LABELS_FR,
   ACADEMIC_LEVELS,
+  DOCUMENT_TYPES,
 } from "@smartinscription/shared";
-import { AlertCircle, GraduationCap, Hash, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  Calendar,
+  Globe,
+  GraduationCap,
+  Hash,
+  Loader2,
+  MapPin,
+  RefreshCw,
+} from "lucide-react";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  completeStudentProfileAction,
-  type ProfileActionState,
-} from "@/features/dossier/actions";
+import { PhotoUploader } from "@/features/documents/components/photo-uploader";
+import { uploadDocumentViaActiveStorage } from "@/features/documents/lib/client-upload";
+import { completeStudentProfileAction } from "@/features/dossier/actions";
 import type { UfrWithFilieres } from "@/features/dossier/queries";
 
 interface ProfileCompletionFormProps {
   ufrs: UfrWithFilieres[];
 }
 
-const initialState: ProfileActionState = {};
-
-/** Formulaire de complétion du profil académique avec filtrage dynamique des filières. */
+/**
+ * Formulaire de complétion du profil académique + état civil + photo optionnelle
+ * (envoi en deux temps : création du dossier puis upload photo avec reprise possible).
+ */
 export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
-  const [state, formAction, isPending] = useActionState(
-    completeStudentProfileAction,
-    initialState
-  );
+  const router = useRouter();
   const [selectedUfrId, setSelectedUfrId] = useState<string>(ufrs[0]?.id ?? "");
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dossierCreated, setDossierCreated] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const selectedUfr = ufrs.find((ufr) => ufr.id === selectedUfrId);
   const filieres = selectedUfr?.filieres ?? [];
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    setPhotoError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const res = await completeStudentProfileAction({}, formData);
+
+    if (!res.ok) {
+      setError(res.error ?? "Impossible de créer le dossier.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    setDossierCreated(true);
+
+    if (selectedPhoto) {
+      const uploadRes = await uploadDocumentViaActiveStorage(
+        DOCUMENT_TYPES.PHOTO,
+        selectedPhoto
+      );
+      if (!uploadRes.ok) {
+        setPhotoError(
+          uploadRes.error ??
+            "Dossier créé, mais l'envoi de la photo a échoué. Vous pouvez réessayer."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    router.push("/etudiant");
+    router.refresh();
+  }
+
+  async function handleRetryPhoto() {
+    if (!selectedPhoto) return;
+    setIsSubmitting(true);
+    setPhotoError(null);
+    const uploadRes = await uploadDocumentViaActiveStorage(
+      DOCUMENT_TYPES.PHOTO,
+      selectedPhoto
+    );
+    setIsSubmitting(false);
+    if (!uploadRes.ok) {
+      setPhotoError(uploadRes.error ?? "Échec de l'envoi de la photo.");
+      return;
+    }
+    router.push("/etudiant");
+    router.refresh();
+  }
+
+  if (dossierCreated && photoError) {
+    return (
+      <div className="space-y-4">
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Votre dossier a bien été créé, mais la photo n&apos;a pas pu être envoyée :{" "}
+            {photoError}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleRetryPhoto}
+            className="h-10 rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
+          >
+            {isSubmitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Réessayer l&apos;envoi de la photo
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              router.push("/etudiant");
+              router.refresh();
+            }}
+            className="h-10 rounded-lg text-sm"
+          >
+            Continuer sans photo
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <form action={formAction} className="space-y-5">
-      {state.error && (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
         <div
           role="alert"
           className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{state.error}</span>
+          <span>{error}</span>
         </div>
       )}
 
@@ -122,12 +232,54 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <FormField
+          id="birthDate"
+          name="birthDate"
+          type="date"
+          label="Date de naissance"
+          required
+          icon={<Calendar className="h-4 w-4" />}
+        />
+        <FormField
+          id="birthPlace"
+          name="birthPlace"
+          label="Lieu de naissance"
+          placeholder="Ex : Ziguinchor"
+          required
+          icon={<MapPin className="h-4 w-4" />}
+        />
+        <FormField
+          id="nationality"
+          name="nationality"
+          label="Nationalité"
+          placeholder="Ex : Sénégalaise"
+          defaultValue="Sénégalaise"
+          required
+          icon={<Globe className="h-4 w-4" />}
+        />
+      </div>
+
+      <div className="space-y-1.5 rounded-xl border border-border bg-muted/20 p-4">
+        <p className="text-[13px] font-medium text-foreground">
+          Photo d&apos;identité (optionnelle à cette étape)
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Visage dégagé, fond uni, cadrage portrait. Elle apparaîtra sur votre carte étudiante numérique.
+        </p>
+        <PhotoUploader
+          mode="deferred"
+          label="Ajouter une photo"
+          onFileSelected={(file) => setSelectedPhoto(file)}
+        />
+      </div>
+
       <Button
         type="submit"
-        disabled={isPending || ufrs.length === 0}
+        disabled={isSubmitting || ufrs.length === 0}
         className="h-10 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
       >
-        {isPending ? (
+        {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Enregistrement en cours...

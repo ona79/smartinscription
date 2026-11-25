@@ -278,11 +278,24 @@ async function main() {
   await prisma.user.createMany({ data: usersData });
 
   // 2. Créer les 300 Student
+  const BIRTH_CITIES = [
+    "Dakar",
+    "Ziguinchor",
+    "Saint-Louis",
+    "Thiès",
+    "Kaolack",
+    "Tambacounda",
+    "Kolda",
+    "Louga",
+  ];
   const studentsData = usersData.map((u, idx) => {
     const n = idx + 1;
     const ufr = ufrs[idx % ufrs.length];
     const filiere = ufr.filieres[idx % ufr.filieres.length];
     const niveau = LEVELS[idx % LEVELS.length];
+    const birthYear = 2000 + (idx % 7);
+    const birthMonth = idx % 12;
+    const birthDay = 1 + (idx % 28);
     return {
       id: `demo-stu-${n}`,
       userId: u.id,
@@ -290,6 +303,9 @@ async function main() {
       ufrId: ufr.id,
       filiereId: filiere.id,
       niveau,
+      birthDate: new Date(Date.UTC(birthYear, birthMonth, birthDay)),
+      birthPlace: BIRTH_CITIES[idx % BIRTH_CITIES.length],
+      nationality: "Sénégalaise",
     };
   });
   await prisma.student.createMany({ data: studentsData });

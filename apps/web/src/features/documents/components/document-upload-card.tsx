@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   DOCUMENT_TYPE_LABELS_FR,
+  DOCUMENT_TYPES,
   type DocumentStatus,
   type DocumentType,
 } from "@smartinscription/shared";
@@ -13,15 +15,15 @@ import {
   ExternalLink,
   FileText,
   Loader2,
+  Trash2,
   Upload,
   XCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  uploadDocumentAction,
-  type DocumentActionState,
-} from "@/features/documents/actions";
+import { deleteDocumentAction } from "@/features/documents/actions";
+import { PhotoUploader } from "@/features/documents/components/photo-uploader";
+import { uploadDocumentViaActiveStorage } from "@/features/documents/lib/client-upload";
 import { cn } from "@/lib/utils";
 
 interface DocumentUploadRowProps {
@@ -31,6 +33,7 @@ interface DocumentUploadRowProps {
     verificationStatus: DocumentStatus;
     motif: string | null;
   } | null;
+  isRegistrationValidated?: boolean;
 }
 
 const STATUS_BADGE: Record<
@@ -54,14 +57,71 @@ const STATUS_BADGE: Record<
   },
 };
 
-const initialState: DocumentActionState = {};
+/** Ligne compacte de dépôt, remplacement, suppression et suivi pour une pièce justificative. */
+export function DocumentUploadCard({
+  type,
+  existingDoc,
+  isRegistrationValidated = false,
+}: DocumentUploadRowProps) {
+  const router = useRouter();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-/** Ligne compacte de dépôt et suivi pour une pièce justificative. */
-export function DocumentUploadCard({ type, existingDoc }: DocumentUploadRowProps) {
-  const [state, formAction, isPending] = useActionState(uploadDocumentAction, initialState);
   const label = DOCUMENT_TYPE_LABELS_FR[type];
   const badgeInfo = existingDoc ? STATUS_BADGE[existingDoc.verificationStatus] : null;
   const StatusIcon = badgeInfo?.icon;
+  const isPhoto = type === DOCUMENT_TYPES.PHOTO;
+
+  const isLocked =
+    existingDoc?.verificationStatus === "APPROVED" ||
+    (isRegistrationValidated &&
+      !(isPhoto && existingDoc?.verificationStatus === "REJECTED"));
+
+  const canDelete =
+    Boolean(existingDoc) &&
+    !isRegistrationValidated &&
+    existingDoc?.verificationStatus !== "APPROVED";
+
+  async function handleUploadSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedFile) return;
+
+    setIsPending(true);
+    setError(null);
+    setSuccess(null);
+
+    const res = await uploadDocumentViaActiveStorage(type, selectedFile);
+    setIsPending(false);
+
+    if (!res.ok) {
+      setError(res.error ?? "Erreur lors du téléversement.");
+      return;
+    }
+
+    setSelectedFile(null);
+    setSuccess("Document enregistré avec succès.");
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!existingDoc) return;
+    setIsPending(true);
+    setError(null);
+    setSuccess(null);
+
+    const res = await deleteDocumentAction(existingDoc.id);
+    setIsPending(false);
+
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+
+    setSuccess(res.success ?? "Pièce supprimée.");
+    router.refresh();
+  }
 
   return (
     <div className="space-y-2.5 p-4">
@@ -79,13 +139,18 @@ export function DocumentUploadCard({ type, existingDoc }: DocumentUploadRowProps
                   {badgeInfo.label}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[11px] text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-2 py-0.5 text-[11px] text-muted-foreground"
+                >
                   Non déposé
                 </Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              PDF, JPG, PNG ou WEBP · max 5 Mo
+              {isPhoto
+                ? "JPG, PNG ou WEBP · max 5 Mo (compressée auto)"
+                : "JPG, PNG, WEBP (max 5 Mo) ou PDF (max 4 Mo)"}
               {existingDoc && (
                 <>
                   {" · "}
@@ -104,57 +169,73 @@ export function DocumentUploadCard({ type, existingDoc }: DocumentUploadRowProps
           </div>
         </div>
 
-        {existingDoc?.verificationStatus !== "APPROVED" && (
-          <form
-            action={formAction}
-            className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap"
-          >
-            <input type="hidden" name="type" value={type} />
-            <input
-              type="file"
-              name="file"
-              accept=".pdf,.jpg,.jpeg,.png,.webp"
-              required
-              aria-label={`Choisir un fichier pour ${label}`}
-              className="w-full max-w-[210px] text-xs text-muted-foreground file:mr-2 file:h-9 file:rounded-lg file:border file:border-border file:bg-surface file:px-3 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted"
-            />
-            <Button
-              type="submit"
-              disabled={isPending}
-              size="sm"
-              className="h-9 shrink-0 rounded-lg bg-brand px-3 text-[13px] font-medium text-brand-foreground hover:bg-brand-dark"
-            >
-              {isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <>
-                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+          {!isLocked &&
+            (isPhoto ? (
+              <PhotoUploader
+                mode="immediate"
+                label={existingDoc ? "Changer la photo" : "Ajouter la photo"}
+              />
+            ) : (
+              <form
+                onSubmit={handleUploadSubmit}
+                className="flex flex-wrap items-center gap-2 sm:flex-nowrap"
+              >
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  required
+                  disabled={isPending}
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+                  aria-label={`Choisir un fichier pour ${label}`}
+                  className="w-full max-w-[210px] text-xs text-muted-foreground file:mr-2 file:h-9 file:rounded-lg file:border file:border-border file:bg-surface file:px-3 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isPending || !selectedFile}
+                  className="h-9 rounded-lg bg-brand px-3.5 text-[13px] font-medium text-brand-foreground hover:bg-brand-dark"
+                >
+                  {isPending ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  )}
                   {existingDoc ? "Remplacer" : "Envoyer"}
-                </>
-              )}
+                </Button>
+              </form>
+            ))}
+
+          {canDelete && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isPending}
+              onClick={handleDelete}
+              aria-label={`Supprimer ${label}`}
+              className="h-9 rounded-lg px-2.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
-          </form>
-        )}
+          )}
+        </div>
       </div>
 
-      {existingDoc?.motif && (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs text-destructive">
-          <strong>Motif du rejet :</strong> {existingDoc.motif}
-        </p>
+      {existingDoc?.verificationStatus === "REJECTED" && existingDoc.motif && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>Motif du rejet : {existingDoc.motif}</span>
+        </div>
       )}
 
-      {state.error && (
-        <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          <span>{state.error}</span>
+      {error && (
+        <p role="alert" className="text-xs font-medium text-destructive">
+          {error}
         </p>
       )}
-
-      {state.success && (
-        <p className="flex items-center gap-1.5 text-xs text-success">
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-          <span>{state.success}</span>
-        </p>
+      {success && (
+        <p className="text-xs font-medium text-success">{success}</p>
       )}
     </div>
   );

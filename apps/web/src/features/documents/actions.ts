@@ -5,14 +5,19 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRole } from "@/features/auth/lib/session";
 import {
+  confirmCloudinaryDocumentUpload,
+  deleteStudentDocument,
   finalizeRegistration,
+  prepareStudentDocumentUpload,
   reviewStudentDocument,
   uploadStudentDocument,
 } from "@/features/documents/services/document-service";
+import type { UploadSignatureResult } from "@/features/documents/services/storage-provider";
 
 export interface DocumentActionState {
   error?: string;
   success?: string;
+  documentId?: string;
 }
 
 const docTypeValues = Object.values(DOCUMENT_TYPES) as [DocumentType, ...DocumentType[]];
@@ -23,7 +28,78 @@ const uploadMetaSchema = z.object({
   }),
 });
 
-/** Action étudiant : téléverse une pièce justificative. */
+const confirmCloudinarySchema = z.object({
+  type: z.enum(docTypeValues, { message: "Type de document invalide." }),
+  publicId: z.string().trim().min(1, "Identifiant Cloudinary manquant."),
+});
+
+function revalidateDocumentViews() {
+  revalidatePath("/etudiant");
+  revalidatePath("/etudiant/dossier");
+  revalidatePath("/etudiant/documents");
+  revalidatePath("/agent");
+  revalidatePath("/admin/dossiers");
+}
+
+/** Action étudiant : génère une signature Cloudinary imposée (ou confirme le mode Supabase). */
+export async function prepareDocumentUploadAction(type: DocumentType): Promise<{
+  ok: boolean;
+  error?: string;
+  signature?: UploadSignatureResult;
+}> {
+  const user = await requireRole([ROLES.STUDENT]);
+  const parsed = uploadMetaSchema.safeParse({ type });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Type invalide." };
+  }
+
+  try {
+    const { signature } = await prepareStudentDocumentUpload({
+      userId: user.id,
+      type: parsed.data.type,
+    });
+    return { ok: true, signature };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Impossible d'initialiser le téléversement.",
+    };
+  }
+}
+
+/** Action étudiant : vérifie l'objet Cloudinary envoyé et l'enregistre en base. */
+export async function confirmCloudinaryUploadAction(input: {
+  type: DocumentType;
+  publicId: string;
+}): Promise<DocumentActionState> {
+  const user = await requireRole([ROLES.STUDENT]);
+  const parsed = confirmCloudinarySchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Paramètres invalides." };
+  }
+
+  try {
+    const { documentId } = await confirmCloudinaryDocumentUpload({
+      userId: user.id,
+      type: parsed.data.type,
+      publicId: parsed.data.publicId,
+    });
+    revalidateDocumentViews();
+    return { success: "Document enregistré avec succès.", documentId };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Échec de vérification du fichier sur Cloudinary.",
+    };
+  }
+}
+
+/** Action étudiant : téléverse une pièce justificative (mode Supabase). */
 export async function uploadDocumentAction(
   _prevState: DocumentActionState,
   formData: FormData
@@ -44,21 +120,40 @@ export async function uploadDocumentAction(
   }
 
   try {
-    await uploadStudentDocument({
+    const { documentId } = await uploadStudentDocument({
       userId: user.id,
       type: parsed.data.type,
       file,
     });
+    revalidateDocumentViews();
+    return { success: "Document téléversé avec succès.", documentId };
   } catch (error) {
     return {
       error:
         error instanceof Error ? error.message : "Erreur lors du téléversement.",
     };
   }
+}
 
-  revalidatePath("/etudiant");
-  revalidatePath("/etudiant/documents");
-  return { success: "Document téléversé avec succès." };
+/** Action étudiant : supprime une pièce justificative avant validation. */
+export async function deleteDocumentAction(
+  documentId: string
+): Promise<DocumentActionState> {
+  const user = await requireRole([ROLES.STUDENT]);
+  if (!documentId) {
+    return { error: "Identifiant de document manquant." };
+  }
+
+  try {
+    await deleteStudentDocument({ userId: user.id, documentId });
+    revalidateDocumentViews();
+    return { success: "Pièce supprimée." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Impossible de supprimer la pièce.",
+    };
+  }
 }
 
 /** Action agent/admin : approuve ou rejette un document. */
@@ -88,9 +183,7 @@ export async function reviewDocumentAction(
   }
 
   revalidatePath(`/agent/dossiers/${registrationId}`);
-  revalidatePath("/agent");
-  revalidatePath("/etudiant");
-  revalidatePath("/etudiant/documents");
+  revalidateDocumentViews();
   return {
     success:
       decision === "APPROVED" ? "Document approuvé." : "Document rejeté.",
@@ -111,7 +204,6 @@ export async function finalizeRegistrationAction(formData: FormData): Promise<vo
   });
 
   revalidatePath(`/agent/dossiers/${registrationId}`);
-  revalidatePath("/agent");
-  revalidatePath("/etudiant");
+  revalidateDocumentViews();
   revalidatePath("/admin");
 }

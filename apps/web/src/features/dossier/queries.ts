@@ -1,4 +1,10 @@
-import { CURRENT_ACADEMIC_YEAR } from "@smartinscription/shared";
+import {
+  CURRENT_ACADEMIC_YEAR,
+  DOCUMENT_TYPES,
+  PAYMENT_STATUSES,
+} from "@smartinscription/shared";
+import { getSignedDocumentUrl } from "@/features/documents/services/document-service";
+import { generateQrDataUrl } from "@/features/recu/services/receipt-service";
 import { prisma } from "@/lib/prisma";
 
 export interface UfrWithFilieres {
@@ -40,6 +46,9 @@ export async function getStudentDashboardData(userId: string) {
       id: true,
       numeroEtudiant: true,
       niveau: true,
+      birthDate: true,
+      birthPlace: true,
+      nationality: true,
       ufr: {
         select: { nom: true, code: true },
       },
@@ -64,6 +73,70 @@ export async function getStudentDashboardData(userId: string) {
   return {
     student,
     registration: student?.registrations[0] ?? null,
+  };
+}
+
+/** Récupère les données complètes de la carte étudiante numérique + photo signée + QR. */
+export async function getStudentDossierWithCard(userId: string) {
+  const student = await prisma.student.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      numeroEtudiant: true,
+      niveau: true,
+      birthDate: true,
+      birthPlace: true,
+      nationality: true,
+      ufr: { select: { nom: true, code: true } },
+      filiere: { select: { nom: true } },
+      registrations: {
+        where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
+        select: {
+          id: true,
+          anneeAcademique: true,
+          statut: true,
+          payments: {
+            where: { statut: PAYMENT_STATUSES.SUCCESS },
+            select: { qrToken: true },
+            take: 1,
+          },
+          documents: {
+            where: { type: DOCUMENT_TYPES.PHOTO },
+            select: {
+              id: true,
+              url: true,
+              verificationStatus: true,
+              motif: true,
+            },
+            take: 1,
+          },
+        },
+        take: 1,
+      },
+    },
+  });
+
+  const registration = student?.registrations[0] ?? null;
+  const photoDoc = registration?.documents[0] ?? null;
+  const qrToken = registration?.payments[0]?.qrToken ?? null;
+
+  const [photoUrl, qrDataUrl] = await Promise.all([
+    photoDoc
+      ? getSignedDocumentUrl(photoDoc.url, {
+          expiresInSeconds: 600,
+          isPhoto: true,
+        })
+      : Promise.resolve(null),
+    qrToken ? generateQrDataUrl(qrToken) : Promise.resolve(null),
+  ]);
+
+  return {
+    student,
+    registration,
+    photoDoc,
+    photoUrl,
+    qrDataUrl,
+    isPaid: Boolean(qrToken),
   };
 }
 
