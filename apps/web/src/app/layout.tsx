@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description:
     "Plateforme web et mobile de paiement et de gestion des inscriptions universitaires au Sénégal.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/logo.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

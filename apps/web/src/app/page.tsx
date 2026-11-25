@@ -3,10 +3,10 @@ import { REGISTRATION_FEE_FCFA } from "@smartinscription/shared";
 import {
   ArrowRight,
   CheckCircle2,
-  GraduationCap,
   QrCode,
   Smartphone,
 } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,9 +21,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-              <GraduationCap className="h-[18px] w-[18px]" />
-            </div>
+            <BrandLogo className="h-8 w-8" />
             <span className="text-sm font-semibold tracking-tight text-foreground">
               SmartInscription IA
             </span>

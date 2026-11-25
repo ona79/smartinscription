@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, GraduationCap, QrCode, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, QrCode, ShieldCheck } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
 interface AuthLayoutProps {
   title: string;
@@ -38,9 +39,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
 
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
-              <GraduationCap className="h-5 w-5 text-white" />
-            </div>
+            <BrandLogo variant="light" className="h-9 w-9 backdrop-blur-sm" />
             <div>
               <span className="block text-sm font-semibold tracking-tight">SmartInscription IA</span>
               <span className="block text-xs text-white/75">Portail universitaire</span>
@@ -85,9 +84,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
         <div className="mx-auto w-full max-w-md space-y-6">
           <div className="flex items-center justify-between gap-4">
             <Link href="/" className="inline-flex items-center gap-2 lg:hidden">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-                <GraduationCap className="h-4 w-4" />
-              </div>
+              <BrandLogo className="h-8 w-8" />
               <span className="text-sm font-semibold tracking-tight">SmartInscription IA</span>
             </Link>
 

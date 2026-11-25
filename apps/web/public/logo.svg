@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <defs>
+    <linearGradient id="si-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#14b8a6" />
+    </linearGradient>
+  </defs>
+  <rect width="40" height="40" rx="10" fill="url(#si-grad)" />
+  <path
+    d="M20 10L7.5 16L20 22L32.5 16L20 10Z"
+    fill="#ffffff"
+  />
+  <path
+    d="M12.5 19.2V25.5C12.5 27.6 15.9 29.5 20 29.5C24.1 29.5 27.5 27.6 27.5 25.5V19.2L20 22.8L12.5 19.2Z"
+    fill="#ffffff"
+    fill-opacity="0.9"
+  />
+  <path
+    d="M31 17V24.5"
+    stroke="#99f6e4"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <circle cx="31" cy="26" r="1.8" fill="#99f6e4" />
+</svg>

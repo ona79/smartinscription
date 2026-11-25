@@ -15,6 +15,7 @@ import {
   QrCode,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/features/auth/actions";
 import { cn } from "@/lib/utils";
@@ -85,9 +86,7 @@ export function PortalShell({
       {/* Barre latérale 240 px sur desktop */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:flex">
         <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-            <GraduationCap className="h-[18px] w-[18px]" />
-          </div>
+          <BrandLogo className="h-8 w-8" />
           <div className="min-w-0">
             <span className="block truncate text-sm font-semibold tracking-tight text-foreground">
               SmartInscription
@@ -126,9 +125,7 @@ export function PortalShell({
         {/* En-tête 56 px avec avatar à initiales, nom, badge discret et déconnexion compacte */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur-sm md:px-6">
           <div className="flex items-center gap-2 md:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-              <GraduationCap className="h-4 w-4" />
-            </div>
+            <BrandLogo className="h-8 w-8" />
             <span className="text-sm font-semibold tracking-tight">{spaceTitle}</span>
           </div>
 
