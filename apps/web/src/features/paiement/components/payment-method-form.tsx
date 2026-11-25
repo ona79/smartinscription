@@ -18,17 +18,17 @@ import { cn } from "@/lib/utils";
 const METHOD_LIST = Object.values(PAYMENT_METHODS) as PaymentMethod[];
 const initialState: PaymentActionState = {};
 
-/** Sélecteur des 5 moyens de paiement avec montant fixe côté serveur. */
+/** Sélecteur compact des 5 moyens de paiement avec montant fixe côté serveur. */
 export function PaymentMethodForm() {
   const [state, formAction, isPending] = useActionState(startPaymentAction, initialState);
   const [selected, setSelected] = useState<PaymentMethod>(PAYMENT_METHODS.ORANGE_MONEY);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-4">
       {state.error && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{state.error}</span>
@@ -37,7 +37,7 @@ export function PaymentMethodForm() {
 
       <input type="hidden" name="moyen" value={selected} />
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {METHOD_LIST.map((method) => {
           const isSelected = selected === method;
           const Icon = method === PAYMENT_METHODS.CARD ? CreditCard : Smartphone;
@@ -48,7 +48,7 @@ export function PaymentMethodForm() {
               onClick={() => setSelected(method)}
               aria-pressed={isSelected}
               className={cn(
-                "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex items-center gap-3 rounded-xl border p-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isSelected
                   ? "border-brand bg-accent/70 ring-1 ring-brand"
                   : "border-border bg-surface hover:border-brand/50"
@@ -56,16 +56,16 @@ export function PaymentMethodForm() {
             >
               <div
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
                   isSelected
                     ? "bg-brand text-brand-foreground"
                     : "bg-muted text-muted-foreground"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-[18px] w-[18px]" />
               </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">
                   {PAYMENT_METHOD_LABELS_FR[method]}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -80,7 +80,7 @@ export function PaymentMethodForm() {
       <Button
         type="submit"
         disabled={isPending}
-        className="h-11 w-full rounded-xl bg-brand text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+        className="h-10 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark sm:w-auto sm:px-6"
       >
         {isPending ? (
           <>

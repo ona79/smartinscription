@@ -9,7 +9,9 @@ import {
 import { CreditCard } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { requireRole } from "@/features/auth/lib/session";
 import { DocumentUploadCard } from "@/features/documents/components/document-upload-card";
 import { REQUIRED_DOCUMENT_TYPES } from "@/features/documents/services/document-service";
@@ -34,11 +36,23 @@ export default async function StudentDocumentsPage() {
     where: { registrationId: registration.id },
   });
 
+  const uploadedCount = REQUIRED_DOCUMENT_TYPES.filter((reqType) =>
+    docs.some((d) => d.type === reqType)
+  ).length;
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Pièces justificatives"
         description={`Année académique ${CURRENT_ACADEMIC_YEAR} — Déposez vos 4 pièces obligatoires pour validation.`}
+        badge={
+          <Badge
+            variant="secondary"
+            className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground"
+          >
+            {uploadedCount}/4 pièces
+          </Badge>
+        }
       />
 
       {!isPaid ? (
@@ -51,7 +65,7 @@ export default async function StudentDocumentsPage() {
               href="/etudiant/paiement"
               className={cn(
                 buttonVariants({ size: "default" }),
-                "h-10 rounded-xl bg-brand px-5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                "h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
               )}
             >
               Payer mes frais
@@ -59,7 +73,7 @@ export default async function StudentDocumentsPage() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="divide-y divide-border rounded-xl border border-border bg-surface py-0 shadow-xs">
           {REQUIRED_DOCUMENT_TYPES.map((docType) => {
             const existing = docs.find((d) => d.type === docType);
             return (
@@ -78,7 +92,7 @@ export default async function StudentDocumentsPage() {
               />
             );
           })}
-        </div>
+        </Card>
       )}
     </div>
   );

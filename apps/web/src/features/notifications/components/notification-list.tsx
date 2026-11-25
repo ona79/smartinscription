@@ -25,8 +25,8 @@ export function NotificationList({ notifications }: NotificationListProps) {
   const unreadCount = notifications.filter((n) => !n.lu).length;
 
   return (
-    <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
+    <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 p-5 pb-3">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-brand" />
           <CardTitle className="text-base font-semibold">Notifications</CardTitle>
@@ -39,16 +39,16 @@ export function NotificationList({ notifications }: NotificationListProps) {
 
         {unreadCount > 0 && (
           <form action={markAllNotificationsReadAction}>
-            <Button type="submit" variant="ghost" size="sm" className="h-8 text-xs">
+            <Button type="submit" variant="ghost" size="sm" className="h-8 rounded-lg text-xs">
               Tout marquer lu
             </Button>
           </form>
         )}
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-5 pt-0">
         {notifications.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
+          <p className="py-3 text-center text-[13px] text-muted-foreground">
             Aucune notification pour le moment.
           </p>
         ) : (

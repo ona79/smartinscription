@@ -25,7 +25,7 @@ export default async function AdminStatsPage() {
   const { ufrs, paymentsByMethod, predictions } = await getAdminStatistics();
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Statistiques & prédictions IA"
         description="Répartition des effectifs par UFR, encaissements par moyen de paiement et prévisions."
@@ -33,7 +33,7 @@ export default async function AdminStatsPage() {
           <form action={generateIaPredictionsAction}>
             <Button
               type="submit"
-              className="h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+              className="h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Générer prévisions IA (7j)
@@ -42,18 +42,18 @@ export default async function AdminStatsPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-          <CardHeader className="pb-3">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardHeader className="p-5 pb-3">
             <CardTitle className="text-base font-semibold">Effectifs par UFR</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Code</TableHead>
                   <TableHead>UFR</TableHead>
-                  <TableHead>Filières</TableHead>
+                  <TableHead className="text-right">Filières</TableHead>
                   <TableHead className="text-right">Étudiants</TableHead>
                 </TableRow>
               </TableHeader>
@@ -61,8 +61,10 @@ export default async function AdminStatsPage() {
                 {ufrs.map((ufr) => (
                   <TableRow key={ufr.id}>
                     <TableCell className="font-mono text-xs">{ufr.code}</TableCell>
-                    <TableCell className="font-medium">{ufr.nom}</TableCell>
-                    <TableCell>{ufr._count.filieres}</TableCell>
+                    <TableCell className="max-w-[180px] truncate font-medium" title={ufr.nom}>
+                      {ufr.nom}
+                    </TableCell>
+                    <TableCell className="text-right">{ufr._count.filieres}</TableCell>
                     <TableCell className="text-right font-semibold">
                       {ufr._count.students}
                     </TableCell>
@@ -73,15 +75,15 @@ export default async function AdminStatsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-          <CardHeader className="pb-3">
+        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardHeader className="p-5 pb-3">
             <CardTitle className="text-base font-semibold">
               Paiements réussis par moyen
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             {paymentsByMethod.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
+              <p className="py-5 text-center text-[13px] text-muted-foreground">
                 Aucun paiement confirmé pour le moment.
               </p>
             ) : (
@@ -89,7 +91,7 @@ export default async function AdminStatsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Moyen</TableHead>
-                    <TableHead>Transactions</TableHead>
+                    <TableHead className="text-right">Transactions</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -99,7 +101,7 @@ export default async function AdminStatsPage() {
                       <TableCell className="font-medium">
                         {PAYMENT_METHOD_LABELS_FR[row.moyen as PaymentMethod]}
                       </TableCell>
-                      <TableCell>{row._count.id}</TableCell>
+                      <TableCell className="text-right">{row._count.id}</TableCell>
                       <TableCell className="text-right font-semibold">
                         {(row._sum.montant ?? 0).toLocaleString("fr-FR")} FCFA
                       </TableCell>
@@ -116,14 +118,14 @@ export default async function AdminStatsPage() {
         <EmptyState
           icon={BarChart3}
           title="Aucune prédiction IA disponible"
-          description="Les prévisions d'affluence apparaîtront ici dès l'activation du module IA."
+          description="Cliquez sur « Générer prévisions IA (7j) » pour calculer l'affluence et les besoins en personnel."
         />
       ) : (
-        <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-          <CardHeader className="pb-3">
+        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardHeader className="p-5 pb-3">
             <CardTitle className="text-base font-semibold">Prédictions récentes</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             <Table>
               <TableHeader>
                 <TableRow>

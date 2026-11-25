@@ -23,7 +23,7 @@ export default async function AdminFraudAlertsPage() {
   const alerts = await getAdminFraudAlerts();
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Alertes fraude"
         description="Surveillance des anomalies de paiement et de dossiers suspects."
@@ -31,7 +31,7 @@ export default async function AdminFraudAlertsPage() {
           <form action={runIaAnomalyScanAction}>
             <Button
               type="submit"
-              className="h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+              className="h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Lancer l&apos;analyse IA
@@ -47,8 +47,8 @@ export default async function AdminFraudAlertsPage() {
           description="Aucune anomalie n'a été signalée sur les paiements ou dossiers récents."
         />
       ) : (
-        <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-          <CardContent className="p-4 sm:p-6">
+        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+          <CardContent className="p-5">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -96,7 +96,7 @@ export default async function AdminFraudAlertsPage() {
                             type="submit"
                             size="sm"
                             variant="outline"
-                            className="h-8 rounded-lg text-xs"
+                            className="h-9 rounded-lg text-[13px]"
                           >
                             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                             Marquer résolue

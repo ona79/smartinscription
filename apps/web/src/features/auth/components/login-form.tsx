@@ -19,11 +19,11 @@ export function LoginForm() {
 
   return (
     <div className="space-y-4">
-      <form action={formAction} className="space-y-5">
+      <form action={formAction} className="space-y-4">
         {state.error && (
           <div
             role="alert"
-            className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+            className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive"
           >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{state.error}</span>
@@ -71,7 +71,7 @@ export function LoginForm() {
         <Button
           type="submit"
           disabled={isPending}
-          className="h-11 w-full rounded-xl bg-brand text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+          className="h-10 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
         >
           {isPending ? (
             <>

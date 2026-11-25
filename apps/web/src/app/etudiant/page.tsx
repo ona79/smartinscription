@@ -27,7 +27,6 @@ export default async function StudentDashboardPage() {
     getUserNotifications(user.id, 6),
   ]);
 
-  // Redirige vers la complétion du profil si l'étudiant n'en a pas encore
   if (!student || !registration) {
     redirect("/etudiant/dossier");
   }
@@ -54,14 +53,14 @@ export default async function StudentDashboardPage() {
   const ActionIcon = primaryAction.icon;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title={`Bonjour, ${user.prenom}`}
         description={`${student.ufr.nom} · ${student.filiere.nom} · ${student.niveau}`}
         badge={
           <Badge
             variant="secondary"
-            className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground"
+            className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground"
           >
             {REGISTRATION_STATUS_LABELS_FR[status]}
           </Badge>
@@ -71,7 +70,7 @@ export default async function StudentDashboardPage() {
             href={primaryAction.href}
             className={cn(
               buttonVariants({ size: "default" }),
-              "h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+              "h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
             )}
           >
             <ActionIcon className="mr-2 h-4 w-4" />
@@ -99,34 +98,23 @@ export default async function StudentDashboardPage() {
         <StatCard
           title="Année académique"
           value={CURRENT_ACADEMIC_YEAR}
-          description={`${registration._count.documents} document(s) déposé(s)`}
+          description={`${registration._count.documents}/4 document(s) déposé(s)`}
           icon={Calendar}
         />
       </div>
 
-      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-        <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-foreground">
-              {isPaid
-                ? "Votre inscription est réglée"
-                : "Prochaine étape : régler les frais d'inscription"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {isPaid
-                ? "Téléchargez votre reçu numérique et présentez le QR code à un agent lors de votre passage."
-                : "Effectuez le paiement de 25 000 FCFA par Mobile Money ou carte bancaire pour obtenir votre reçu."}
-            </p>
-          </div>
-          <Link
-            href={primaryAction.href}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "h-10 shrink-0 rounded-xl px-4 text-sm font-medium"
-            )}
-          >
-            {primaryAction.label}
-          </Link>
+      <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardContent className="p-5">
+          <h2 className="text-base font-semibold text-foreground">
+            {isPaid
+              ? "Votre inscription est réglée"
+              : "Prochaine étape : régler les frais d'inscription"}
+          </h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {isPaid
+              ? "Téléchargez votre reçu numérique depuis l'en-tête et présentez le QR code à un agent lors de votre passage."
+              : "Effectuez le paiement de 25 000 FCFA par Mobile Money ou carte bancaire pour obtenir votre reçu."}
+          </p>
         </CardContent>
       </Card>
 

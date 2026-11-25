@@ -125,10 +125,14 @@ export function FaqChatbotWidget() {
         <Button
           type="button"
           onClick={() => setOpen(true)}
-          className="h-12 rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-md hover:bg-brand-dark"
+          aria-label="Aide FAQ"
+          title="Aide FAQ"
+          className="group h-12 w-12 rounded-full bg-brand p-0 text-sm font-medium text-brand-foreground shadow-md transition-all hover:w-auto hover:px-4 lg:w-auto lg:px-4 hover:bg-brand-dark"
         >
-          <MessageCircle className="mr-2 h-4 w-4" />
-          Aide FAQ
+          <MessageCircle className="h-5 w-5 shrink-0" />
+          <span className="hidden group-hover:ml-2 group-hover:inline lg:ml-2 lg:inline">
+            Aide FAQ
+          </span>
         </Button>
       )}
     </div>

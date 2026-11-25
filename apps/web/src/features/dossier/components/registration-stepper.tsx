@@ -7,7 +7,7 @@ interface RegistrationStepperProps {
   status: RegistrationStatus | null;
 }
 
-/** Stepper de progression des 4 grandes étapes de l'inscription étudiante. */
+/** Stepper compact (48 px de haut, pastilles 24 px) des 4 étapes de l'inscription. */
 export function RegistrationStepper({ hasProfile, status }: RegistrationStepperProps) {
   const isPaid =
     status === REGISTRATION_STATUSES.PAID ||
@@ -41,22 +41,22 @@ export function RegistrationStepper({ hasProfile, status }: RegistrationStepperP
   ];
 
   return (
-    <ol className="grid gap-3 sm:grid-cols-4">
+    <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {steps.map((step, index) => (
         <li
           key={step.label}
           className={cn(
-            "flex items-center gap-3 rounded-2xl border p-4 transition-colors",
+            "flex h-12 items-center gap-2.5 rounded-xl border px-3.5 transition-colors",
             step.done
               ? "border-brand/30 bg-accent/60"
               : step.active
                 ? "border-brand bg-surface"
-                : "border-border/80 bg-surface opacity-70"
+                : "border-border bg-surface opacity-70"
           )}
         >
           <span
             className={cn(
-              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
               step.done
                 ? "bg-brand text-brand-foreground"
                 : step.active
@@ -64,9 +64,9 @@ export function RegistrationStepper({ hasProfile, status }: RegistrationStepperP
                   : "border border-border text-muted-foreground"
             )}
           >
-            {step.done ? <Check className="h-4 w-4" /> : index + 1}
+            {step.done ? <Check className="h-3.5 w-3.5" /> : index + 1}
           </span>
-          <span className="text-xs font-semibold leading-tight text-foreground">
+          <span className="truncate text-[13px] font-medium text-foreground">
             {step.label}
           </span>
         </li>

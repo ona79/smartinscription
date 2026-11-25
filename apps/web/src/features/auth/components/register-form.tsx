@@ -141,11 +141,11 @@ export function RegisterForm() {
         }
       />
 
-      <Button
-        type="submit"
-        disabled={isPending}
-        className="mt-2 h-11 w-full rounded-xl bg-brand text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
-      >
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="mt-1 h-10 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
+        >
         {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

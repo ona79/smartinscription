@@ -58,9 +58,16 @@ interface PortalShellProps {
   children: React.ReactNode;
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
 /**
- * Coquille applicative minimaliste pour les espaces étudiant, agent et admin :
- * barre latérale fine sur desktop, en-tête utilisateur et barre basse sur mobile.
+ * Coquille applicative compacte pour les espaces étudiant, agent et admin :
+ * barre latérale 240 px sur desktop, en-tête 56 px et barre basse sur mobile.
  */
 export function PortalShell({
   spaceTitle,
@@ -71,20 +78,21 @@ export function PortalShell({
   children,
 }: PortalShellProps) {
   const pathname = usePathname();
+  const initials = getInitials(userName);
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Barre latérale fine sur desktop */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border/80 bg-surface md:flex">
-        <div className="flex h-16 items-center gap-2.5 border-b border-border/80 px-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-brand-foreground">
-            <GraduationCap className="h-4 w-4" />
+      {/* Barre latérale 240 px sur desktop */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:flex">
+        <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
+            <GraduationCap className="h-[18px] w-[18px]" />
           </div>
           <div className="min-w-0">
-            <span className="block truncate text-sm font-bold tracking-tight text-foreground">
+            <span className="block truncate text-sm font-semibold tracking-tight text-foreground">
               SmartInscription
             </span>
-            <span className="block truncate text-[11px] text-muted-foreground">
+            <span className="block truncate text-xs text-muted-foreground">
               {spaceTitle}
             </span>
           </div>
@@ -99,7 +107,7 @@ export function PortalShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-brand text-brand-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -115,51 +123,62 @@ export function PortalShell({
 
       {/* Colonne principale */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* En-tête commun avec nom, rôle et déconnexion */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-surface/95 px-4 backdrop-blur-sm md:px-8">
-          <div className="flex items-center gap-2.5 md:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-brand-foreground">
+        {/* En-tête 56 px avec avatar à initiales, nom, badge discret et déconnexion compacte */}
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur-sm md:px-6">
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
               <GraduationCap className="h-4 w-4" />
             </div>
-            <span className="text-sm font-bold tracking-tight">{spaceTitle}</span>
+            <span className="text-sm font-semibold tracking-tight">{spaceTitle}</span>
           </div>
 
-          <div className="hidden text-sm font-medium text-muted-foreground md:block">
+          <div className="hidden text-[13px] font-medium text-muted-foreground md:block">
             {spaceTitle}
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium leading-none text-foreground">{userName}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{userEmail}</p>
-            </div>
-            <Badge
-              variant="secondary"
-              className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground"
+          <div className="flex items-center gap-2.5">
+            <div
+              title={userEmail}
+              className="flex items-center gap-2 rounded-lg px-1.5 py-1"
             >
-              {roleLabel}
-            </Badge>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent text-xs font-semibold text-accent-foreground">
+                {initials}
+              </span>
+              <span className="hidden max-w-[140px] truncate text-sm font-medium text-foreground sm:inline">
+                {userName}
+              </span>
+              <Badge
+                variant="secondary"
+                className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+              >
+                {roleLabel}
+              </Badge>
+            </div>
+
             <form action={logoutAction}>
               <Button
                 type="submit"
-                variant="outline"
-                size="sm"
-                className="h-9 rounded-xl px-3 text-xs font-medium"
+                variant="ghost"
+                size="icon"
+                aria-label="Déconnexion"
+                title="Déconnexion"
+                className="h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground"
               >
-                <LogOut className="h-3.5 w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Déconnexion</span>
+                <LogOut className="h-4 w-4" />
               </Button>
             </form>
           </div>
         </header>
 
-        {/* Contenu */}
-        <main className="flex-1 p-4 pb-24 md:p-8 md:pb-10">{children}</main>
+        {/* Contenu principal max-w-6xl centré */}
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 pb-20 md:px-6 md:py-6 md:pb-8">
+          {children}
+        </main>
       </div>
 
       {/* Barre basse mobile */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-border/80 bg-surface/95 px-1 backdrop-blur-sm md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-border bg-surface/95 px-1 backdrop-blur-sm md:hidden"
         aria-label="Navigation mobile"
       >
         {navItems.map((item) => {
@@ -170,11 +189,11 @@ export function PortalShell({
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[11px] font-medium transition-colors",
+                "flex min-h-[40px] flex-1 flex-col items-center justify-center gap-1 rounded-lg py-1 text-[11px] font-medium transition-colors",
                 isActive ? "text-brand" : "text-muted-foreground"
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-[18px] w-[18px]" />
               <span className="max-w-[72px] truncate">{item.shortLabel ?? item.label}</span>
             </Link>
           );

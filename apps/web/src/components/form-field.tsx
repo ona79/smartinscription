@@ -31,7 +31,7 @@ export function FormField({
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-sm font-medium text-foreground">
+      <Label htmlFor={id} className="text-[13px] font-medium text-foreground">
         {label}
       </Label>
 
@@ -39,7 +39,7 @@ export function FormField({
         {icon && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute left-3.5 flex items-center text-muted-foreground"
+            className="pointer-events-none absolute left-3 flex items-center text-muted-foreground"
           >
             {icon}
           </span>
@@ -50,16 +50,17 @@ export function FormField({
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
           className={cn(
-            "h-11 rounded-xl bg-surface text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring/30",
-            icon && "pl-10",
-            trailing && "pr-10",
-            error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
+            "h-10 rounded-lg bg-surface text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring/30",
+            icon && "pl-9",
+            trailing && "pr-9",
+            error &&
+              "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
             className
           )}
           {...props}
         />
 
-        {trailing && <div className="absolute right-2.5 flex items-center">{trailing}</div>}
+        {trailing && <div className="absolute right-2 flex items-center">{trailing}</div>}
       </div>
 
       {hint && !error && (

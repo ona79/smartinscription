@@ -9,7 +9,7 @@ interface EmptyStateProps {
   className?: string;
 }
 
-/** État vide centré pour les listes sans données ou modules en attente. */
+/** État vide compact centré pour les listes sans données ou modules en attente. */
 export function EmptyState({
   icon: Icon,
   title,
@@ -20,16 +20,16 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center",
+        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface px-5 py-7 text-center",
         className
       )}
     >
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
-        <Icon className="h-6 w-6" />
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+        <Icon className="h-5 w-5" />
       </div>
-      <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">{description}</p>
-      {action && <div className="mt-5">{action}</div>}
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <p className="mt-1 max-w-sm text-[13px] text-muted-foreground">{description}</p>
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }

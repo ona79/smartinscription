@@ -10,7 +10,7 @@ interface StatCardProps {
   className?: string;
 }
 
-/** Carte de statistique minimaliste réutilisable dans les tableaux de bord. */
+/** Carte de statistique compacte et sobre pour les tableaux de bord. */
 export function StatCard({
   title,
   value,
@@ -19,15 +19,17 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <Card className={cn("border-border/80 bg-surface shadow-none", className)}>
-      <CardContent className="flex items-start justify-between gap-4 p-5">
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <Card className={cn("rounded-xl border border-border bg-surface py-0 shadow-xs", className)}>
+      <CardContent className="flex items-start justify-between gap-3 p-5">
+        <div className="min-w-0 space-y-1">
+          <p className="text-[13px] font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+          {description && (
+            <p className="truncate text-[13px] text-muted-foreground">{description}</p>
+          )}
         </div>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-          <Icon className="h-5 w-5" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+          <Icon className="h-[18px] w-[18px]" />
         </div>
       </CardContent>
     </Card>

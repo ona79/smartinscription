@@ -17,14 +17,14 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* En-tête sobre */}
-      <header className="sticky top-0 z-20 border-b border-border/80 bg-surface/90 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground">
-              <GraduationCap className="h-5 w-5" />
+      {/* En-tête 56 px */}
+      <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
+              <GraduationCap className="h-[18px] w-[18px]" />
             </div>
-            <span className="text-base font-bold tracking-tight text-foreground">
+            <span className="text-sm font-semibold tracking-tight text-foreground">
               SmartInscription IA
             </span>
           </Link>
@@ -32,7 +32,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Link
               href="/connexion"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "rounded-xl")}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "rounded-lg")}
             >
               Connexion
             </Link>
@@ -40,7 +40,7 @@ export default function HomePage() {
               href="/inscription"
               className={cn(
                 buttonVariants({ size: "sm" }),
-                "rounded-xl bg-brand text-brand-foreground hover:bg-brand-dark"
+                "rounded-lg bg-brand text-brand-foreground hover:bg-brand-dark"
               )}
             >
               S&apos;inscrire
@@ -50,21 +50,20 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1">
-        {/* Section héro sobre */}
-        <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 md:py-24">
-          <div className="mx-auto max-w-2xl space-y-6 text-center">
+        <section className="mx-auto max-w-6xl px-4 py-12 md:px-6 md:py-16">
+          <div className="mx-auto max-w-2xl space-y-4 text-center">
             <Badge
               variant="secondary"
-              className="rounded-full bg-accent px-3.5 py-1 text-xs font-medium text-accent-foreground"
+              className="rounded-full bg-accent px-3 py-0.5 text-xs font-medium text-accent-foreground"
             >
               Inscriptions universitaires au Sénégal
             </Badge>
 
-            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl sm:leading-[1.12]">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               Payez et gérez votre inscription universitaire en toute simplicité
             </h1>
 
-            <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
               Réglez vos frais d&apos;inscription ({formattedFee} FCFA), déposez vos pièces
               justificatives, obtenez votre reçu numérique avec QR code et prenez rendez-vous en
               ligne.
@@ -74,8 +73,8 @@ export default function HomePage() {
               <Link
                 href="/inscription"
                 className={cn(
-                  buttonVariants({ size: "lg" }),
-                  "h-11 rounded-xl bg-brand px-6 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                  buttonVariants({ size: "default" }),
+                  "h-10 rounded-lg bg-brand px-5 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
                 )}
               >
                 Commencer mon inscription
@@ -84,8 +83,8 @@ export default function HomePage() {
               <Link
                 href="/connexion"
                 className={cn(
-                  buttonVariants({ variant: "outline", size: "lg" }),
-                  "h-11 rounded-xl bg-surface px-6 text-sm font-semibold"
+                  buttonVariants({ variant: "outline", size: "default" }),
+                  "h-10 rounded-lg bg-surface px-5 text-sm font-medium"
                 )}
               >
                 Se connecter
@@ -93,43 +92,42 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 3 cartes de bénéfices alignées */}
-          <div className="mt-16 grid gap-5 sm:grid-cols-3">
-            <Card className="border-border/80 bg-surface shadow-none">
-              <CardHeader className="space-y-3 pb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                  <Smartphone className="h-5 w-5" />
+          <div className="mt-12 grid gap-4 sm:grid-cols-3">
+            <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+              <CardHeader className="space-y-2.5 p-5 pb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <Smartphone className="h-[18px] w-[18px]" />
                 </div>
                 <CardTitle className="text-base font-semibold">Paiement Mobile Money</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm leading-relaxed text-muted-foreground">
+              <CardContent className="p-5 pt-0 text-[13px] leading-relaxed text-muted-foreground">
                 Orange Money, Wave, Free Money, Wizall ou carte bancaire pour les {formattedFee}{" "}
                 FCFA de frais.
               </CardContent>
             </Card>
 
-            <Card className="border-border/80 bg-surface shadow-none">
-              <CardHeader className="space-y-3 pb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                  <QrCode className="h-5 w-5" />
+            <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+              <CardHeader className="space-y-2.5 p-5 pb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <QrCode className="h-[18px] w-[18px]" />
                 </div>
                 <CardTitle className="text-base font-semibold">
                   Reçu numérique & QR Code
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-sm leading-relaxed text-muted-foreground">
+              <CardContent className="p-5 pt-0 text-[13px] leading-relaxed text-muted-foreground">
                 Reçu instantané vérifiable sur place par un agent via scan du QR code.
               </CardContent>
             </Card>
 
-            <Card className="border-border/80 bg-surface shadow-none">
-              <CardHeader className="space-y-3 pb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                  <CheckCircle2 className="h-5 w-5" />
+            <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+              <CardHeader className="space-y-2.5 p-5 pb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <CheckCircle2 className="h-[18px] w-[18px]" />
                 </div>
                 <CardTitle className="text-base font-semibold">Suivi de dossier</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm leading-relaxed text-muted-foreground">
+              <CardContent className="p-5 pt-0 text-[13px] leading-relaxed text-muted-foreground">
                 Téléversement des pièces, prise de rendez-vous et notifications en temps réel.
               </CardContent>
             </Card>
@@ -137,8 +135,8 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-border/80 bg-surface py-6">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-2 px-4 text-xs text-muted-foreground sm:flex-row sm:px-6">
+      <footer className="border-t border-border bg-surface py-5">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 text-xs text-muted-foreground sm:flex-row md:px-6">
           <span>© {new Date().getFullYear()} SmartInscription IA</span>
           <span>Plateforme de paiement et de gestion des inscriptions universitaires</span>
         </div>

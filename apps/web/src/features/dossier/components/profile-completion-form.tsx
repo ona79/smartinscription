@@ -55,7 +55,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
       />
 
       <div className="space-y-1.5">
-        <Label htmlFor="ufrId" className="text-sm font-medium text-foreground">
+        <Label htmlFor="ufrId" className="text-[13px] font-medium text-foreground">
           UFR
         </Label>
         <select
@@ -64,7 +64,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
           required
           value={selectedUfrId}
           onChange={(e) => setSelectedUfrId(e.target.value)}
-          className="flex h-11 w-full rounded-xl border border-input bg-surface px-3.5 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+          className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
         >
           <option value="" disabled>
             Sélectionnez votre UFR
@@ -79,7 +79,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="filiereId" className="text-sm font-medium text-foreground">
+          <Label htmlFor="filiereId" className="text-[13px] font-medium text-foreground">
             Filière
           </Label>
           <select
@@ -89,7 +89,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             required
             defaultValue={filieres[0]?.id ?? ""}
             disabled={filieres.length === 0}
-            className="flex h-11 w-full rounded-xl border border-input bg-surface px-3.5 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50"
+            className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50"
           >
             <option value="" disabled>
               Sélectionnez une filière
@@ -103,7 +103,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="niveau" className="text-sm font-medium text-foreground">
+          <Label htmlFor="niveau" className="text-[13px] font-medium text-foreground">
             Niveau
           </Label>
           <select
@@ -111,7 +111,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
             name="niveau"
             required
             defaultValue="L1"
-            className="flex h-11 w-full rounded-xl border border-input bg-surface px-3.5 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
           >
             {ACADEMIC_LEVELS.map((level) => (
               <option key={level} value={level}>
@@ -125,7 +125,7 @@ export function ProfileCompletionForm({ ufrs }: ProfileCompletionFormProps) {
       <Button
         type="submit"
         disabled={isPending || ufrs.length === 0}
-        className="h-11 w-full rounded-xl bg-brand text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+        className="h-10 w-full rounded-lg bg-brand text-sm font-medium text-brand-foreground hover:bg-brand-dark"
       >
         {isPending ? (
           <>

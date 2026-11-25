@@ -34,7 +34,7 @@ export default async function AdminDashboardPage() {
   const metrics = await getAdminDashboardMetrics();
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Tableau de bord administrateur"
         description={`Suivi global des inscriptions et des encaissements (${CURRENT_ACADEMIC_YEAR}).`}
@@ -68,15 +68,15 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Dernières inscriptions */}
-      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-        <CardHeader className="pb-3">
+      <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardHeader className="p-5 pb-3">
           <CardTitle className="text-base font-semibold">
             Dernières inscriptions ({CURRENT_ACADEMIC_YEAR})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           {metrics.recentRegistrations.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
+            <p className="py-5 text-center text-[13px] text-muted-foreground">
               Aucune inscription enregistrée pour le moment.
             </p>
           ) : (
@@ -87,7 +87,7 @@ export default async function AdminDashboardPage() {
                   <TableHead>N° étudiant</TableHead>
                   <TableHead>UFR / Filière</TableHead>
                   <TableHead>Reçu</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Statut</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -99,13 +99,13 @@ export default async function AdminDashboardPage() {
                     <TableCell className="font-mono text-xs">
                       {reg.student.numeroEtudiant}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="text-[13px] text-muted-foreground">
                       {reg.student.ufr.code} — {reg.student.filiere.nom}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {reg.payments[0]?.receiptNumber ?? "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Badge variant="secondary" className="rounded-full text-xs">
                         {REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus]}
                       </Badge>
@@ -119,13 +119,13 @@ export default async function AdminDashboardPage() {
       </Card>
 
       {/* Gestion des rôles */}
-      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-        <CardHeader className="pb-3">
+      <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardHeader className="p-5 pb-3">
           <CardTitle className="text-base font-semibold">
             Gestion des rôles utilisateurs
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,7 +141,9 @@ export default async function AdminDashboardPage() {
                   <TableCell className="font-medium">
                     {u.prenom} {u.nom}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{u.email}</TableCell>
+                  <TableCell className="text-[13px] text-muted-foreground">
+                    {u.email}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="rounded-full text-xs">
                       {ROLE_LABELS_FR[u.role as Role]}
@@ -160,13 +162,18 @@ export default async function AdminDashboardPage() {
                           name="role"
                           defaultValue={u.role}
                           aria-label={`Rôle pour ${u.email}`}
-                          className="h-8 rounded-lg border border-input bg-surface px-2 text-xs"
+                          className="h-9 rounded-lg border border-input bg-surface px-2.5 text-[13px]"
                         >
                           <option value={ROLES.STUDENT}>Étudiant</option>
                           <option value={ROLES.AGENT}>Agent</option>
                           <option value={ROLES.ADMIN}>Administrateur</option>
                         </select>
-                        <Button type="submit" size="sm" variant="outline" className="h-8 rounded-lg text-xs">
+                        <Button
+                          type="submit"
+                          size="sm"
+                          variant="outline"
+                          className="h-9 rounded-lg text-[13px]"
+                        >
                           Appliquer
                         </Button>
                       </form>

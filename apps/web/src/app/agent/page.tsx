@@ -7,6 +7,7 @@ import {
   type RegistrationStatus,
 } from "@smartinscription/shared";
 import { Calendar, Check, FileCheck2, QrCode, X } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +62,7 @@ export default async function AgentHomePage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Accueil agent de scolarité"
         description="Vérification des pièces justificatives, gestion des rendez-vous et scan QR."
@@ -70,7 +71,7 @@ export default async function AgentHomePage() {
             href="/agent/scan"
             className={cn(
               buttonVariants({ size: "default" }),
-              "h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+              "h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
             )}
           >
             <QrCode className="mr-2 h-4 w-4" />
@@ -95,17 +96,19 @@ export default async function AgentHomePage() {
       </div>
 
       {/* Dossiers à vérifier */}
-      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-        <CardHeader className="pb-3">
+      <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardHeader className="p-5 pb-3">
           <CardTitle className="text-base font-semibold">
             Dossiers en attente de vérification
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           {dossiers.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Aucun dossier en attente de contrôle pour le moment.
-            </p>
+            <EmptyState
+              icon={FileCheck2}
+              title="Aucun dossier en attente"
+              description="Tous les dossiers payés ont été traités."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -127,10 +130,10 @@ export default async function AgentHomePage() {
                     <TableCell className="font-mono text-xs">
                       {reg.student.numeroEtudiant}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="text-[13px] text-muted-foreground">
                       {reg.student.filiere.nom} ({reg.student.niveau})
                     </TableCell>
-                    <TableCell>{reg._count.documents} / 4</TableCell>
+                    <TableCell>{reg._count.documents}/4</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="rounded-full text-xs">
                         {REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus]}
@@ -141,7 +144,7 @@ export default async function AgentHomePage() {
                         href={`/agent/dossiers/${reg.id}`}
                         className={cn(
                           buttonVariants({ variant: "outline", size: "sm" }),
-                          "rounded-xl text-xs"
+                          "h-9 rounded-lg text-[13px]"
                         )}
                       >
                         Vérifier
@@ -156,17 +159,17 @@ export default async function AgentHomePage() {
       </Card>
 
       {/* Rendez-vous planifiés */}
-      <Card className="rounded-2xl border-border/80 bg-surface shadow-none">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            Rendez-vous planifiés
-          </CardTitle>
+      <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="text-base font-semibold">Rendez-vous planifiés</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           {appointments.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Aucun rendez-vous planifié pour le moment.
-            </p>
+            <EmptyState
+              icon={Calendar}
+              title="Aucun rendez-vous planifié"
+              description="Les prochains créneaux réservés apparaîtront ici."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -186,7 +189,7 @@ export default async function AgentHomePage() {
                     <TableCell className="font-mono text-xs">
                       {appt.student.numeroEtudiant}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="text-[13px]">
                       {appt.debut.toLocaleString("fr-FR", {
                         dateStyle: "medium",
                         timeStyle: "short",
@@ -200,7 +203,7 @@ export default async function AgentHomePage() {
                           <Button
                             type="submit"
                             size="sm"
-                            className="h-8 rounded-lg bg-brand px-2.5 text-xs text-brand-foreground hover:bg-brand-dark"
+                            className="h-9 rounded-lg bg-brand px-3 text-[13px] text-brand-foreground hover:bg-brand-dark"
                           >
                             <Check className="mr-1 h-3.5 w-3.5" />
                             Effectué
@@ -213,7 +216,7 @@ export default async function AgentHomePage() {
                             type="submit"
                             size="sm"
                             variant="outline"
-                            className="h-8 rounded-lg px-2.5 text-xs"
+                            className="h-9 rounded-lg px-3 text-[13px]"
                           >
                             <X className="mr-1 h-3.5 w-3.5" />
                             Absent
