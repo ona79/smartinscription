@@ -30,12 +30,26 @@ export default async function AgentDossierDetailPage({ params }: AgentDossierDet
 
   const registration = await prisma.registration.findUnique({
     where: { id: registrationId },
-    include: {
+    select: {
+      id: true,
+      statut: true,
       student: {
-        include: { user: true, ufr: true, filiere: true },
+        select: {
+          numeroEtudiant: true,
+          niveau: true,
+          user: { select: { prenom: true, nom: true } },
+          ufr: { select: { nom: true } },
+          filiere: { select: { nom: true } },
+        },
       },
       documents: {
         orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          type: true,
+          verificationStatus: true,
+          motif: true,
+        },
       },
     },
   });

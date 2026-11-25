@@ -108,12 +108,20 @@ export async function getAdminDashboardMetrics() {
     }),
     prisma.registration.findMany({
       where: { anneeAcademique: CURRENT_ACADEMIC_YEAR },
-      include: {
+      select: {
+        id: true,
+        statut: true,
         student: {
-          include: { user: true, ufr: true, filiere: true },
+          select: {
+            numeroEtudiant: true,
+            user: { select: { prenom: true, nom: true } },
+            ufr: { select: { code: true } },
+            filiere: { select: { nom: true } },
+          },
         },
         payments: {
           where: { statut: PAYMENT_STATUSES.SUCCESS },
+          select: { receiptNumber: true },
           take: 1,
         },
       },
@@ -154,7 +162,10 @@ export async function getAdminStatistics() {
   const [ufrs, paymentsByMethod, predictions, registrations] = await Promise.all([
     prisma.uFR.findMany({
       orderBy: { nom: "asc" },
-      include: {
+      select: {
+        id: true,
+        code: true,
+        nom: true,
         _count: { select: { students: true, filieres: true } },
       },
     }),
@@ -166,6 +177,13 @@ export async function getAdminStatistics() {
     }),
     prisma.prediction.findMany({
       orderBy: [{ dateCible: "asc" }, { heure: "asc" }],
+      select: {
+        id: true,
+        type: true,
+        dateCible: true,
+        heure: true,
+        valeur: true,
+      },
       take: 60,
     }),
     prisma.registration.findMany({
@@ -204,12 +222,23 @@ export async function getAdminDossiers(params: {
   const [items, total, ufrs] = await Promise.all([
     prisma.registration.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        statut: true,
+        aiClass: true,
+        aiScore: true,
         student: {
-          include: { user: true, ufr: true, filiere: true },
+          select: {
+            numeroEtudiant: true,
+            niveau: true,
+            user: { select: { prenom: true, nom: true } },
+            ufr: { select: { code: true } },
+            filiere: { select: { nom: true } },
+          },
         },
         payments: {
           where: { statut: PAYMENT_STATUSES.SUCCESS },
+          select: { receiptNumber: true },
           take: 1,
         },
       },
@@ -218,7 +247,10 @@ export async function getAdminDossiers(params: {
       take: pageSize,
     }),
     prisma.registration.count({ where }),
-    prisma.uFR.findMany({ orderBy: { nom: "asc" } }),
+    prisma.uFR.findMany({
+      orderBy: { nom: "asc" },
+      select: { id: true, code: true, nom: true },
+    }),
   ]);
 
   return {
@@ -251,11 +283,15 @@ export async function getAdminFraudAlerts(params?: {
     prisma.fraudAlert.findMany({
       where,
       orderBy,
-      include: {
-        payment: true,
+      select: {
+        id: true,
+        type: true,
+        score: true,
+        resolu: true,
+        payment: { select: { providerRef: true } },
         registration: {
-          include: {
-            student: { include: { user: true } },
+          select: {
+            student: { select: { numeroEtudiant: true } },
           },
         },
       },

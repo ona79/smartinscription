@@ -17,12 +17,31 @@ import { getStudentDashboardData } from "@/features/dossier/queries";
 import { cancelAppointmentAction } from "@/features/rendez-vous/actions";
 import { SlotPicker } from "@/features/rendez-vous/components/slot-picker";
 import { generateAvailableSlots } from "@/features/rendez-vous/services/appointment-service";
+import { measurePerf } from "@/lib/perf";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 export default async function StudentRendezVousPage() {
-  const user = await requireRole([ROLES.STUDENT]);
-  const { student, registration } = await getStudentDashboardData(user.id);
+  return measurePerf("page", "/etudiant/rendez-vous", async () => {
+    const user = await requireRole([ROLES.STUDENT]);
+    const [{ student, registration }, activeAppointment, booked] = await Promise.all([
+      getStudentDashboardData(user.id),
+      prisma.appointment.findFirst({
+        where: {
+          student: { userId: user.id },
+          statut: APPOINTMENT_STATUSES.SCHEDULED,
+        },
+        orderBy: { debut: "asc" },
+        select: { id: true, debut: true },
+      }),
+      prisma.appointment.findMany({
+        where: {
+          statut: APPOINTMENT_STATUSES.SCHEDULED,
+          debut: { gte: new Date() },
+        },
+        select: { debut: true },
+      }),
+    ]);
 
   if (!student || !registration) {
     redirect("/etudiant/dossier");
@@ -35,22 +54,6 @@ export default async function StudentRendezVousPage() {
     REGISTRATION_STATUSES.VALIDATED,
   ];
   const isPaid = paidStatuses.includes(registration.statut as RegistrationStatus);
-
-  const activeAppointment = await prisma.appointment.findFirst({
-    where: {
-      studentId: student.id,
-      statut: APPOINTMENT_STATUSES.SCHEDULED,
-    },
-    orderBy: { debut: "asc" },
-  });
-
-  const booked = await prisma.appointment.findMany({
-    where: {
-      statut: APPOINTMENT_STATUSES.SCHEDULED,
-      debut: { gte: new Date() },
-    },
-    select: { debut: true },
-  });
 
   const availableSlots = generateAvailableSlots(booked.map((b) => b.debut));
 
@@ -135,4 +138,5 @@ export default async function StudentRendezVousPage() {
       )}
     </div>
   );
+  });
 }

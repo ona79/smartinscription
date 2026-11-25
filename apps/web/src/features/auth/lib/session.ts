@@ -1,10 +1,12 @@
+import { cache } from "react";
 import { ROLE_DEFAULT_ROUTES, type Role } from "@smartinscription/shared";
 import { redirect } from "next/navigation";
+import { measurePerf } from "@/lib/perf";
 import { prisma } from "@/lib/prisma";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
-/** Retourne l'utilisateur Prisma actuellement authentifié (avec son profil étudiant), ou null. */
-export async function getCurrentUser() {
+/** Retourne l'utilisateur Prisma actuellement authentifié (mémoïsé par requête via React.cache), ou null. */
+export const getCurrentUser = cache(async () => {
   if (!isSupabaseConfigured()) {
     return null;
   }
@@ -13,7 +15,9 @@ export async function getCurrentUser() {
   const {
     data: { user: authUser },
     error,
-  } = await supabase.auth.getUser();
+  } = await measurePerf("auth", "getCurrentUser:supabase.getUser", () =>
+    supabase.auth.getUser()
+  );
 
   if (error || !authUser) {
     return null;
@@ -21,18 +25,18 @@ export async function getCurrentUser() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: authUser.id },
-    include: {
-      student: {
-        include: {
-          ufr: true,
-          filiere: true,
-        },
-      },
+    select: {
+      id: true,
+      email: true,
+      nom: true,
+      prenom: true,
+      telephone: true,
+      role: true,
     },
   });
 
   return dbUser;
-}
+});
 
 /**
  * Vérifie que l'utilisateur courant est authentifié et possède l'un des rôles autorisés.

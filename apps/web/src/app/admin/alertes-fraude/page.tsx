@@ -18,6 +18,7 @@ import { getAdminFraudAlerts } from "@/features/admin/queries";
 import { requireRole } from "@/features/auth/lib/session";
 import { runIaAnomalyScanAction } from "@/features/ia/actions";
 import { IaActionButton } from "@/features/ia/components/ia-action-button";
+import { measurePerf } from "@/lib/perf";
 
 interface AdminFraudAlertsPageProps {
   searchParams: Promise<{ type?: string; sort?: string }>;
@@ -26,12 +27,13 @@ interface AdminFraudAlertsPageProps {
 export default async function AdminFraudAlertsPage({
   searchParams,
 }: AdminFraudAlertsPageProps) {
-  await requireRole([ROLES.ADMIN]);
-  const params = await searchParams;
-  const { alerts, types } = await getAdminFraudAlerts({
-    type: params.type,
-    sort: params.sort,
-  });
+  return measurePerf("page", "/admin/alertes-fraude", async () => {
+    await requireRole([ROLES.ADMIN]);
+    const params = await searchParams;
+    const { alerts, types } = await getAdminFraudAlerts({
+      type: params.type,
+      sort: params.sort,
+    });
 
   return (
     <div className="space-y-5">
@@ -160,4 +162,5 @@ export default async function AdminFraudAlertsPage({
       )}
     </div>
   );
+  });
 }

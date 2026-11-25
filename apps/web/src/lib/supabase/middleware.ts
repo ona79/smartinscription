@@ -1,6 +1,7 @@
 import { ROLE_DEFAULT_ROUTES, ROLES, type Role } from "@smartinscription/shared";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { measurePerf } from "@/lib/perf";
 
 const PROTECTED_PREFIXES: { prefix: string; allowedRoles: Role[] }[] = [
   { prefix: "/etudiant", allowedRoles: [ROLES.STUDENT] },
@@ -59,9 +60,14 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
+  // Rafraîchit la session si expirée et vérifie la présence d'une session localement sans
+  // doubler l'appel réseau getUser() effectué par requireRole() dans le layout/page.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await measurePerf("auth", `proxy:getSession(${pathname})`, () =>
+    supabase.auth.getSession()
+  );
+  const user = session?.user ?? null;
 
   if (!user && matchedProtected) {
     const url = request.nextUrl.clone();

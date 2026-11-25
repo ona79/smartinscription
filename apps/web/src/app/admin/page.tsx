@@ -29,9 +29,11 @@ import { updateUserRoleAction } from "@/features/admin/actions";
 import { AutoRefresh } from "@/features/admin/components/auto-refresh";
 import { getAdminDashboardMetrics } from "@/features/admin/queries";
 import { requireRole } from "@/features/auth/lib/session";
+import { measurePerf } from "@/lib/perf";
 
 export default async function AdminDashboardPage() {
-  const adminUser = await requireRole([ROLES.ADMIN]);
+  return measurePerf("page", "/admin", async () => {
+    const adminUser = await requireRole([ROLES.ADMIN]);
   const metrics = await getAdminDashboardMetrics();
 
   return (
@@ -189,4 +191,5 @@ export default async function AdminDashboardPage() {
       </Card>
     </div>
   );
+  });
 }

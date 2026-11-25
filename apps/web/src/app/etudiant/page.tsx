@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -13,23 +14,40 @@ import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { requireRole } from "@/features/auth/lib/session";
 import { RegistrationStepper } from "@/features/dossier/components/registration-stepper";
 import { getStudentDashboardData } from "@/features/dossier/queries";
 import { NotificationList } from "@/features/notifications/components/notification-list";
 import { getUserNotifications } from "@/features/notifications/services/notification-service";
+import { measurePerf } from "@/lib/perf";
 import { cn } from "@/lib/utils";
 
-export default async function StudentDashboardPage() {
-  const user = await requireRole([ROLES.STUDENT]);
-  const [{ student, registration }, notifications] = await Promise.all([
-    getStudentDashboardData(user.id),
-    getUserNotifications(user.id, 6),
-  ]);
+async function NotificationsSection({ userId }: { userId: string }) {
+  const notifications = await getUserNotifications(userId, 6);
+  return <NotificationList notifications={notifications} />;
+}
 
-  if (!student || !registration) {
-    redirect("/etudiant/dossier");
-  }
+function NotificationsSkeleton() {
+  return (
+    <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
+      <CardContent className="space-y-3 p-5">
+        <Skeleton className="h-5 w-44" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </CardContent>
+    </Card>
+  );
+}
+
+export default async function StudentDashboardPage() {
+  return measurePerf("page", "/etudiant", async () => {
+    const user = await requireRole([ROLES.STUDENT]);
+    const { student, registration } = await getStudentDashboardData(user.id);
+
+    if (!student || !registration) {
+      redirect("/etudiant/dossier");
+    }
 
   const status = registration.statut;
   const isPaid =
@@ -118,7 +136,10 @@ export default async function StudentDashboardPage() {
         </CardContent>
       </Card>
 
-      <NotificationList notifications={notifications} />
+      <Suspense fallback={<NotificationsSkeleton />}>
+        <NotificationsSection userId={user.id} />
+      </Suspense>
     </div>
   );
+  });
 }

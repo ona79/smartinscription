@@ -84,6 +84,7 @@ model User {
   activities    ActivityLog[]
 
   @@index([role])
+  @@index([createdAt])
 }
 
 model UFR {
@@ -144,6 +145,8 @@ model Registration {
   @@unique([studentId, anneeAcademique])
   @@index([statut])
   @@index([anneeAcademique])
+  @@index([createdAt])
+  @@index([statut, updatedAt])
 }
 
 model Payment {
@@ -165,6 +168,7 @@ model Payment {
 
   @@index([registrationId])
   @@index([statut])
+  @@index([createdAt])
 }
 
 model Document {
@@ -181,6 +185,7 @@ model Document {
 
   @@index([registrationId])
   @@index([verificationStatus])
+  @@index([createdAt])
 }
 
 model Appointment {
@@ -196,6 +201,7 @@ model Appointment {
 
   @@index([studentId])
   @@index([debut])
+  @@index([statut, debut])
 }
 
 model Notification {
@@ -209,6 +215,7 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, lu])
+  @@index([userId, createdAt])
   @@index([createdAt])
 }
 
@@ -228,6 +235,7 @@ model FraudAlert {
   @@index([paymentId])
   @@index([registrationId])
   @@index([resolu])
+  @@index([resolu, createdAt])
 }
 
 model Prediction {
