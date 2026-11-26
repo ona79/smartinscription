@@ -134,6 +134,7 @@ export function NotificationList({ notifications: initialNotifications }: Notifi
                       {date.toLocaleString("fr-FR", {
                         dateStyle: "short",
                         timeStyle: "short",
+                        timeZone: "UTC",
                       })}
                     </p>
                   </div>

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createHash } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { CURRENT_ACADEMIC_YEAR } from "@smartinscription/shared";
 import {
   AppointmentStatus,
   BuStatus,
@@ -16,8 +17,14 @@ import { assertDemoSeedAllowed } from "./seed-demo-guard";
 
 const DEMO_EMAIL_PREFIX = "demo.";
 const DEMO_STUDENT_COUNT = 300;
-const ACADEMIC_YEAR = "2025-2026";
+const ACADEMIC_YEAR = CURRENT_ACADEMIC_YEAR;
 const FEE_FCFA = 25000;
+
+/** Année académique précédente, déduite de l'année courante pour éviter tout décalage. */
+function previousAcademicYear(year: string): string {
+  const start = Number(year.slice(0, 4));
+  return `${start - 1}-${start}`;
+}
 
 const FIRST_NAMES = [
   "Aminata",
@@ -333,14 +340,16 @@ async function main() {
     };
   });
 
+  const previousYear = previousAcademicYear(ACADEMIC_YEAR);
+  const twoYearsAgo = previousAcademicYear(previousYear);
   const PRIOR_LEVELS: Record<string, { year: string; niveau: string }[]> = {
-    L2: [{ year: "2024-2025", niveau: "L1" }],
+    L2: [{ year: previousYear, niveau: "L1" }],
     L3: [
-      { year: "2024-2025", niveau: "L2" },
-      { year: "2023-2024", niveau: "L1" },
+      { year: previousYear, niveau: "L2" },
+      { year: twoYearsAgo, niveau: "L1" },
     ],
-    M1: [{ year: "2024-2025", niveau: "L3" }],
-    M2: [{ year: "2024-2025", niveau: "M1" }],
+    M1: [{ year: previousYear, niveau: "L3" }],
+    M2: [{ year: previousYear, niveau: "M1" }],
   };
 
   const historicalRegistrations: {
@@ -378,7 +387,7 @@ async function main() {
     {
       id: "demo-reg-dup-1",
       studentId: studentsData[0].id,
-      anneeAcademique: "2024-2025",
+      anneeAcademique: previousYear,
       niveau: studentsData[0].niveau,
       statut: RegistrationStatus.PAID,
       buStatus: BuStatus.NONE,
@@ -388,7 +397,7 @@ async function main() {
     {
       id: "demo-reg-dup-2",
       studentId: studentsData[1].id,
-      anneeAcademique: "2024-2025",
+      anneeAcademique: previousYear,
       niveau: studentsData[1].niveau,
       statut: RegistrationStatus.PAID,
       buStatus: BuStatus.NONE,

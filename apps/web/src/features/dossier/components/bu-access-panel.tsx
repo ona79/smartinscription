@@ -40,7 +40,7 @@ export function BuAccessPanel({
   const isActive = buStatus === "ACTIVE";
   const nextStatus = isActive ? "NONE" : "ACTIVE";
   const formattedDate = buValidatedAt
-    ? new Date(buValidatedAt).toLocaleDateString("fr-FR")
+    ? new Date(buValidatedAt).toLocaleDateString("fr-FR", { timeZone: "UTC" })
     : null;
 
   return (
