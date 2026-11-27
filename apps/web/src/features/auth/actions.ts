@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { recordActivity } from "@/features/activity/record-activity";
 import {
+  getPublicTestAccounts,
   getUnlockedTestAccounts,
   type TestAccountItem,
 } from "@/features/auth/lib/test-accounts";
@@ -288,6 +289,15 @@ export async function logoutAction(): Promise<void> {
 }
 
 export type { TestAccountItem };
+
+/** Retourne les comptes de test sans code d'accès (ENABLE_TEST_ACCOUNTS=true uniquement). */
+export async function listTestAccountsAction(): Promise<{
+  ok: boolean;
+  accounts?: TestAccountItem[];
+  error?: string;
+}> {
+  return getPublicTestAccounts();
+}
 
 /** Vérifie le code d'accès et retourne les comptes de test (ENABLE_TEST_ACCOUNTS=true uniquement). */
 export async function unlockTestAccountsAction(passcode: string): Promise<{

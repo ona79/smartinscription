@@ -13,30 +13,19 @@ export function isTestAccountsEnabled(
   return env.ENABLE_TEST_ACCOUNTS === "true";
 }
 
-/** Vérifie le code d'accès et construit la liste des comptes depuis les variables d'env. */
-export function getUnlockedTestAccounts(
-  passcode: string,
-  env: Record<string, string | undefined> = process.env
+function buildTestAccountItems(
+  env: Record<string, string | undefined>
 ): { ok: boolean; accounts?: TestAccountItem[]; error?: string } {
-  if (!isTestAccountsEnabled(env)) {
-    return { ok: false, error: "Comptes de test désactivés." };
-  }
-
-  const expected = env.TEST_ACCOUNTS_PASSCODE;
-  if (!expected || passcode.trim() !== expected) {
-    return { ok: false, error: "Code d'accès incorrect." };
-  }
-
   const candidates: { role: Role; roleLabel: string; email: string; password?: string }[] = [
     {
       role: "ADMIN",
-      roleLabel: "Admin",
+      roleLabel: "Administrateur",
       email: "admin@smartinscription.sn",
       password: env.SEED_ADMIN_PASSWORD,
     },
     {
       role: "AGENT",
-      roleLabel: "Agent",
+      roleLabel: "Agent scolarité",
       email: "agent@smartinscription.sn",
       password: env.SEED_AGENT_PASSWORD,
     },
@@ -60,4 +49,31 @@ export function getUnlockedTestAccounts(
   }
 
   return { ok: true, accounts };
+}
+
+/** Retourne les comptes de test sans mot de passe d'accès lorsque ENABLE_TEST_ACCOUNTS=true. */
+export function getPublicTestAccounts(
+  env: Record<string, string | undefined> = process.env
+): { ok: boolean; accounts?: TestAccountItem[]; error?: string } {
+  if (!isTestAccountsEnabled(env)) {
+    return { ok: false, error: "Comptes de test désactivés." };
+  }
+  return buildTestAccountItems(env);
+}
+
+/** Vérifie le code d'accès et construit la liste des comptes depuis les variables d'env. */
+export function getUnlockedTestAccounts(
+  passcode: string,
+  env: Record<string, string | undefined> = process.env
+): { ok: boolean; accounts?: TestAccountItem[]; error?: string } {
+  if (!isTestAccountsEnabled(env)) {
+    return { ok: false, error: "Comptes de test désactivés." };
+  }
+
+  const expected = env.TEST_ACCOUNTS_PASSCODE;
+  if (!expected || passcode.trim() !== expected) {
+    return { ok: false, error: "Code d'accès incorrect." };
+  }
+
+  return buildTestAccountItems(env);
 }

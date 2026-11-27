@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, KeyRound, Loader2, Lock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { GraduationCap, Landmark, Loader2, Shield, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  unlockTestAccountsAction,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  listTestAccountsAction,
   type TestAccountItem,
 } from "@/features/auth/actions";
 
@@ -14,128 +19,122 @@ interface TestAccountsHelperProps {
   onSelectAccount: (email: string, password: string) => void;
 }
 
-/** Petit panneau déverrouillable par mot de passe pour faciliter les tests de l'équipe. */
+function getProfileVisual(email: string) {
+  if (email.startsWith("admin@")) {
+    return {
+      icon: Shield,
+      boxClass: "border-blue-200 bg-blue-50 text-blue-600",
+    };
+  }
+  if (email.startsWith("agent@")) {
+    return {
+      icon: Landmark,
+      boxClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    };
+  }
+  return {
+    icon: GraduationCap,
+    boxClass: "border-amber-200 bg-amber-50 text-amber-700",
+  };
+}
+
+/** Fenêtre modale affichant directement les comptes de test à préremplir (sans mot de passe). */
 export function TestAccountsHelper({ onSelectAccount }: TestAccountsHelperProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [passcode, setPasscode] = useState("");
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<TestAccountItem[] | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleUnlock(e: React.FormEvent) {
-    e.preventDefault();
+  function handleOpen() {
+    setOpen(true);
+    if (accounts) return;
     setError(null);
-
     startTransition(async () => {
-      const result = await unlockTestAccountsAction(passcode);
+      const result = await listTestAccountsAction();
       if (!result.ok || !result.accounts) {
-        setError(result.error ?? "Code d'accès incorrect.");
+        setError(result.error ?? "Impossible de charger les comptes de test.");
         return;
       }
       setAccounts(result.accounts);
-      setPasscode("");
     });
   }
 
+  function handleSelect(acc: TestAccountItem) {
+    onSelectAccount(acc.email, acc.password);
+    setOpen(false);
+  }
+
   return (
-    <div className="pt-2">
+    <div className="pt-1">
       <div className="flex justify-center">
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="h-8 rounded-xl text-xs text-muted-foreground hover:text-foreground"
+          onClick={handleOpen}
+          className="h-8 rounded-full px-3.5 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
-          <KeyRound className="mr-1.5 h-3.5 w-3.5" />
+          <Users className="mr-1.5 h-3.5 w-3.5" />
           Comptes de test
-          {expanded ? (
-            <ChevronUp className="ml-1 h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="ml-1 h-3.5 w-3.5" />
-          )}
         </Button>
       </div>
 
-      {expanded && (
-        <div className="mt-3 rounded-2xl border border-border/80 bg-muted/30 p-4">
-          {!accounts ? (
-            <form onSubmit={handleUnlock} className="space-y-2.5">
-              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <Lock className="h-3.5 w-3.5" />
-                Entrez le code d&apos;accès pour afficher les comptes de test
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="password"
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="Code d'accès..."
-                  className="h-9 rounded-xl bg-surface text-xs"
-                  required
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isPending}
-                  className="h-9 shrink-0 rounded-xl bg-brand px-3.5 text-xs font-semibold text-brand-foreground hover:bg-brand-dark"
-                >
-                  {isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    "Valider"
-                  )}
-                </Button>
-              </div>
-              {error && (
-                <p role="alert" className="text-xs font-medium text-destructive">
-                  {error}
-                </p>
-              )}
-            </form>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md rounded-2xl p-5 sm:p-6">
+          <DialogHeader className="space-y-1 text-left">
+            <DialogTitle className="text-lg font-semibold text-foreground">
+              Comptes de test
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Sélectionnez un profil pour préremplir les identifiants.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isPending && !accounts ? (
+            <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Chargement des profils...
+            </div>
+          ) : error ? (
+            <p role="alert" className="py-4 text-center text-xs font-medium text-destructive">
+              {error}
+            </p>
           ) : (
-            <div className="space-y-2.5">
-              <p className="text-xs font-semibold text-foreground">
-                Cliquez sur un compte pour pré-remplir :
-              </p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {accounts.map((acc) => (
-                  <div
+            <div className="space-y-2.5 pt-1">
+              {(accounts ?? []).map((acc) => {
+                const { icon: Icon, boxClass } = getProfileVisual(acc.email);
+                return (
+                  <button
                     key={acc.email}
-                    className="flex min-w-0 flex-col justify-between gap-1.5 rounded-lg border border-border/80 bg-surface p-2 text-xs"
+                    type="button"
+                    onClick={() => handleSelect(acc)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 text-left transition-colors hover:border-brand/40 hover:bg-muted/30"
                   >
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <Badge variant="secondary" className="rounded-full px-1.5 py-0 text-[10px]">
-                          {acc.roleLabel}
-                        </Badge>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onSelectAccount(acc.email, acc.password)}
-                          className="h-5 shrink-0 rounded-md px-1.5 text-[10px]"
-                        >
-                          Remplir
-                        </Button>
-                      </div>
-                      <p
-                        title={acc.email}
-                        className="truncate font-mono text-[10px] text-foreground"
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${boxClass}`}
                       >
-                        {acc.email}
-                      </p>
-                      <p className="truncate font-mono text-[10px] text-muted-foreground">
-                        {acc.password}
-                      </p>
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {acc.roleLabel}
+                        </p>
+                        <p className="truncate font-mono text-xs text-muted-foreground">
+                          {acc.email}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                    <span className="shrink-0 text-xs font-medium text-brand">
+                      Préremplir
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
