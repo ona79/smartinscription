@@ -10,14 +10,11 @@ import {
 } from "@smartinscription/shared";
 import {
   ArrowRight,
-  Calendar,
   CheckCircle2,
   CreditCard,
   FileText,
-  GraduationCap,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,10 +35,10 @@ async function NotificationsSection({ userId }: { userId: string }) {
 function NotificationsSkeleton() {
   return (
     <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
-      <CardContent className="space-y-3 p-4 sm:p-5">
-        <Skeleton className="h-5 w-44" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
+      <CardContent className="space-y-2 p-3.5">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
       </CardContent>
     </Card>
   );
@@ -80,21 +77,21 @@ export default async function StudentDashboardPage() {
           }
         : {
             href: "/etudiant/paiement",
-            label: "Voir mon reçu et QR code",
+            label: "Voir mon reçu",
             icon: CheckCircle2,
           };
 
     const ActionIcon = primaryAction.icon;
 
     return (
-      <div className="space-y-4 sm:space-y-5">
+      <div className="space-y-3 sm:space-y-4">
         <PageHeader
           title={`Bonjour, ${user.prenom}`}
-          description={`${student.ufr.nom} · ${student.filiere.nom} · ${student.niveau}`}
+          description={`${student.ufr.code} · ${student.filiere.nom} · ${student.niveau} · ${CURRENT_ACADEMIC_YEAR}`}
           badge={
             <Badge
               variant="secondary"
-              className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground"
+              className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground"
             >
               {REGISTRATION_STATUS_LABELS_FR[status]}
             </Badge>
@@ -103,53 +100,43 @@ export default async function StudentDashboardPage() {
             <Link
               href={primaryAction.href}
               className={cn(
-                buttonVariants({ size: "default" }),
-                "w-full rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark sm:w-auto"
+                buttonVariants({ size: "sm" }),
+                "h-9 w-full rounded-lg bg-brand px-3.5 text-xs font-medium text-brand-foreground hover:bg-brand-dark sm:w-auto sm:text-[13px]"
               )}
             >
-              <ActionIcon className="mr-2 h-4 w-4" />
+              <ActionIcon className="mr-1.5 h-3.5 w-3.5" />
               {primaryAction.label}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>
           }
         />
 
         <RegistrationStepper hasProfile={Boolean(student)} status={status} />
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-          <StatCard
-            title="Statut du dossier"
-            value={REGISTRATION_STATUS_LABELS_FR[status]}
-            description={`N° ${student.numeroEtudiant}`}
-            icon={GraduationCap}
-          />
-          <StatCard
-            title="Frais d'inscription"
-            value={`${REGISTRATION_FEE_FCFA.toLocaleString("fr-FR")} FCFA`}
-            description={isPaid ? "Paiement confirmé" : "En attente"}
-            icon={CreditCard}
-          />
-          <StatCard
-            title="Année académique"
-            value={CURRENT_ACADEMIC_YEAR}
-            description={`${registration._count.documents}/4 document(s) déposé(s)`}
-            icon={Calendar}
-            className="col-span-2 sm:col-span-1"
-          />
-        </div>
-
+        {/* Synthèse compacte en 1 seul bloc */}
         <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
-          <CardContent className="p-4 sm:p-5">
-            <h2 className="text-base font-semibold text-foreground">
-              {isPaid
-                ? "Votre inscription est réglée"
-                : "Prochaine étape : régler les frais d'inscription"}
-            </h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              {isPaid
-                ? "Téléchargez votre reçu numérique et présentez le QR code à un agent lors de votre passage."
-                : "Effectuez le paiement de 25 000 FCFA par Mobile Money ou carte bancaire pour obtenir votre reçu."}
-            </p>
+          <CardContent className="grid grid-cols-3 divide-x divide-border p-0">
+            <div className="min-w-0 px-3 py-2.5 sm:px-4">
+              <p className="truncate text-[11px] text-muted-foreground">Dossier</p>
+              <p className="truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
+                {student.numeroEtudiant}
+              </p>
+            </div>
+            <div className="min-w-0 px-3 py-2.5 sm:px-4">
+              <p className="truncate text-[11px] text-muted-foreground">Frais</p>
+              <p className="truncate text-xs font-semibold text-foreground sm:text-sm">
+                {REGISTRATION_FEE_FCFA.toLocaleString("fr-FR")} F ·{" "}
+                <span className={isPaid ? "text-success" : "text-amber-700"}>
+                  {isPaid ? "Payé" : "Dû"}
+                </span>
+              </p>
+            </div>
+            <div className="min-w-0 px-3 py-2.5 sm:px-4">
+              <p className="truncate text-[11px] text-muted-foreground">Pièces</p>
+              <p className="truncate text-xs font-semibold text-foreground sm:text-sm">
+                {registration._count.documents}/4 déposée(s)
+              </p>
+            </div>
           </CardContent>
         </Card>
 

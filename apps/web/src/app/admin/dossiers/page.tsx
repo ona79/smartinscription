@@ -60,24 +60,20 @@ export default async function AdminDossiersPage({ searchParams }: AdminDossiersP
     }
 
     return (
-      <div className="space-y-4 sm:space-y-5">
+      <div className="space-y-3 sm:space-y-4">
         <PageHeader
           title="Dossiers d'inscription"
-          description={`${total} dossier(s) pour l'année ${CURRENT_ACADEMIC_YEAR}.`}
+          description={`${total} dossier(s) · ${CURRENT_ACADEMIC_YEAR}`}
         />
 
-        {/* Recherche en haut + Filtres dans une feuille sur mobile */}
-        <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
-          <CardContent className="p-4">
-            <AdminDossiersFilters
-              q={params.q}
-              statut={params.statut}
-              ufrId={params.ufrId}
-              aiClass={params.aiClass}
-              ufrs={ufrs}
-            />
-          </CardContent>
-        </Card>
+        {/* Barre de recherche & filtres compacte sans bloc superflu */}
+        <AdminDossiersFilters
+          q={params.q}
+          statut={params.statut}
+          ufrId={params.ufrId}
+          aiClass={params.aiClass}
+          ufrs={ufrs}
+        />
 
         {items.length === 0 ? (
           <EmptyState
@@ -87,75 +83,70 @@ export default async function AdminDossiersPage({ searchParams }: AdminDossiersP
           />
         ) : (
           <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
-            <CardContent className="p-4 sm:p-5">
-              {/* Mobile : liste de cartes */}
-              <div className="space-y-2.5 md:hidden">
+            <CardContent className="px-3.5 py-2 sm:px-4 sm:py-2.5">
+              {/* Mobile : liste compacte */}
+              <div className="divide-y divide-border/70 md:hidden">
                 {items.map((reg) => (
-                  <div
-                    key={reg.id}
-                    className="space-y-1.5 rounded-xl border border-border bg-background/50 p-3.5"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground">
+                  <div key={reg.id} className="space-y-0.5 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-xs font-semibold text-foreground">
                         {reg.student.user.prenom} {reg.student.user.nom}
                       </p>
-                      <Badge variant="secondary" className="rounded-full text-[11px]">
-                        {REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus]}
-                      </Badge>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {reg.aiClass && (
+                          <Badge
+                            variant={reg.aiClass === "SUSPECT" ? "destructive" : "secondary"}
+                            className="rounded-full px-1.5 py-0 text-[10px]"
+                          >
+                            {reg.aiClass}
+                          </Badge>
+                        )}
+                        <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+                          {REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus]}
+                        </Badge>
+                      </div>
                     </div>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {reg.student.numeroEtudiant}
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      <span className="font-mono">{reg.student.numeroEtudiant}</span> ·{" "}
+                      {reg.student.ufr.code} — {reg.student.filiere.nom} ({reg.student.niveau})
                       {reg.payments[0]?.receiptNumber
-                        ? ` · Reçu ${reg.payments[0].receiptNumber}`
+                        ? ` · ${reg.payments[0].receiptNumber}`
                         : ""}
                     </p>
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-                      <p className="text-xs text-muted-foreground">
-                        {reg.student.ufr.code} — {reg.student.filiere.nom} ({reg.student.niveau})
-                      </p>
-                      {reg.aiClass && (
-                        <Badge
-                          variant={reg.aiClass === "SUSPECT" ? "destructive" : "secondary"}
-                          className="rounded-full text-[11px]"
-                        >
-                          {reg.aiClass}
-                        </Badge>
-                      )}
-                    </div>
                   </div>
                 ))}
               </div>
 
-              {/* Desktop : tableau */}
+              {/* Desktop : tableau dense */}
               <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Étudiant</TableHead>
-                      <TableHead>N° étudiant</TableHead>
-                      <TableHead>UFR / Filière</TableHead>
-                      <TableHead>Classe IA</TableHead>
-                      <TableHead>Reçu</TableHead>
-                      <TableHead className="text-right">Statut</TableHead>
+                      <TableHead className="h-8 text-xs">Étudiant</TableHead>
+                      <TableHead className="h-8 text-xs">N° étudiant</TableHead>
+                      <TableHead className="h-8 text-xs">UFR / Filière</TableHead>
+                      <TableHead className="h-8 text-xs">Classe IA</TableHead>
+                      <TableHead className="h-8 text-xs">Reçu</TableHead>
+                      <TableHead className="h-8 text-right text-xs">Statut</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((reg) => (
                       <TableRow key={reg.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="py-1.5 text-xs font-medium">
                           {reg.student.user.prenom} {reg.student.user.nom}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="py-1.5 font-mono text-xs">
                           {reg.student.numeroEtudiant}
                         </TableCell>
-                        <TableCell className="text-[13px] text-muted-foreground">
+                        <TableCell className="py-1.5 text-xs text-muted-foreground">
                           {reg.student.ufr.code} — {reg.student.filiere.nom} ({reg.student.niveau})
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5">
                           {reg.aiClass ? (
                             <Badge
                               variant={reg.aiClass === "SUSPECT" ? "destructive" : "secondary"}
-                              className="rounded-full text-xs"
+                              className="rounded-full px-2 py-0 text-[11px]"
                             >
                               {reg.aiClass}
                             </Badge>
@@ -163,11 +154,11 @@ export default async function AdminDossiersPage({ searchParams }: AdminDossiersP
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="py-1.5 font-mono text-xs">
                           {reg.payments[0]?.receiptNumber ?? "—"}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="secondary" className="rounded-full text-xs">
+                        <TableCell className="py-1.5 text-right">
+                          <Badge variant="secondary" className="rounded-full px-2 py-0 text-[11px]">
                             {REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus]}
                           </Badge>
                         </TableCell>
@@ -178,17 +169,17 @@ export default async function AdminDossiersPage({ searchParams }: AdminDossiersP
               </div>
 
               {totalPages > 1 && (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4 text-[13px]">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5 text-xs">
                   <span className="text-muted-foreground">
-                    Page {page} sur {totalPages}
+                    Page {page} / {totalPages}
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     {page > 1 && (
                       <Link
                         href={buildPageHref(page - 1)}
                         className={cn(
                           buttonVariants({ variant: "outline", size: "sm" }),
-                          "rounded-lg"
+                          "h-7 rounded-lg px-2.5 text-xs"
                         )}
                       >
                         Précédent
@@ -199,7 +190,7 @@ export default async function AdminDossiersPage({ searchParams }: AdminDossiersP
                         href={buildPageHref(page + 1)}
                         className={cn(
                           buttonVariants({ variant: "outline", size: "sm" }),
-                          "rounded-lg"
+                          "h-7 rounded-lg px-2.5 text-xs"
                         )}
                       >
                         Suivant

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   CURRENT_ACADEMIC_YEAR,
   REGISTRATION_STATUS_LABELS_FR,
@@ -7,6 +8,7 @@ import {
   type Role,
 } from "@smartinscription/shared";
 import {
+  ArrowRight,
   Banknote,
   Clock,
   CreditCard,
@@ -36,14 +38,14 @@ export default async function AdminDashboardPage() {
     const metrics = await getAdminDashboardMetrics();
 
     return (
-      <div className="space-y-4 sm:space-y-5">
+      <div className="space-y-3 sm:space-y-4">
         <PageHeader
           title="Tableau de bord administrateur"
           description={`Suivi des inscriptions et encaissements (${CURRENT_ACADEMIC_YEAR}).`}
           actions={<AutoRefresh intervalMs={30_000} />}
         />
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
           <StatCard
             title="Étudiants inscrits"
             value={metrics.totalStudents}
@@ -51,19 +53,19 @@ export default async function AdminDashboardPage() {
             icon={GraduationCap}
           />
           <StatCard
-            title="Transactions réussies"
+            title="Transactions"
             value={metrics.paidCount}
             description={`${metrics.unresolvedFraudCount} alerte(s)`}
             icon={CreditCard}
           />
           <StatCard
-            title="Recettes encaissées"
-            value={`${metrics.totalRevenueFcfa.toLocaleString("fr-FR")} FCFA`}
+            title="Recettes"
+            value={`${metrics.totalRevenueFcfa.toLocaleString("fr-FR")} F`}
             description={`Année ${CURRENT_ACADEMIC_YEAR}`}
             icon={Banknote}
           />
           <StatCard
-            title="File active du jour"
+            title="File du jour"
             value={metrics.activeQueueCount}
             description={`${metrics.paidNotValidatedCount} à valider · ${metrics.todayAppointmentsCount} RDV`}
             icon={Clock}
@@ -72,40 +74,42 @@ export default async function AdminDashboardPage() {
 
         {/* Dernières inscriptions */}
         <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
-          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-3">
-            <CardTitle className="text-base font-semibold">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 px-3.5 py-2.5 sm:px-4">
+            <CardTitle className="text-sm font-semibold sm:text-base">
               Dernières inscriptions ({CURRENT_ACADEMIC_YEAR})
             </CardTitle>
+            <Link
+              href="/admin/dossiers"
+              className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+            >
+              Voir tout
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+          <CardContent className="px-3.5 pt-0 pb-2.5 sm:px-4 sm:pb-3">
             {metrics.recentRegistrations.length === 0 ? (
-              <p className="py-5 text-center text-[13px] text-muted-foreground">
+              <p className="py-4 text-center text-xs text-muted-foreground">
                 Aucune inscription enregistrée pour le moment.
               </p>
             ) : (
               <>
-                <div className="space-y-2.5 md:hidden">
+                <div className="divide-y divide-border/70 md:hidden">
                   {metrics.recentRegistrations.map((reg) => (
-                    <div
-                      key={reg.id}
-                      className="space-y-1.5 rounded-xl border border-border bg-background/50 p-3.5"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-foreground">
+                    <div key={reg.id} className="space-y-0.5 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-xs font-semibold text-foreground">
                           {reg.student.user.prenom} {reg.student.user.nom}
                         </p>
-                        <Badge variant="secondary" className="rounded-full text-[11px]">
+                        <Badge variant="secondary" className="shrink-0 rounded-full px-2 py-0 text-[10px]">
                           {REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus]}
                         </Badge>
                       </div>
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {reg.student.numeroEtudiant}
-                        {reg.payments[0]?.receiptNumber
-                          ? ` · Reçu ${reg.payments[0].receiptNumber}`
-                          : ""}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        <span className="font-mono">{reg.student.numeroEtudiant}</span> ·{" "}
                         {reg.student.ufr.code} — {reg.student.filiere.nom}
+                        {reg.payments[0]?.receiptNumber
+                          ? ` · ${reg.payments[0].receiptNumber}`
+                          : ""}
                       </p>
                     </div>
                   ))}
@@ -115,30 +119,30 @@ export default async function AdminDashboardPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Étudiant</TableHead>
-                        <TableHead>N° étudiant</TableHead>
-                        <TableHead>UFR / Filière</TableHead>
-                        <TableHead>Reçu</TableHead>
-                        <TableHead className="text-right">Statut</TableHead>
+                        <TableHead className="h-8 text-xs">Étudiant</TableHead>
+                        <TableHead className="h-8 text-xs">N° étudiant</TableHead>
+                        <TableHead className="h-8 text-xs">UFR / Filière</TableHead>
+                        <TableHead className="h-8 text-xs">Reçu</TableHead>
+                        <TableHead className="h-8 text-right text-xs">Statut</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {metrics.recentRegistrations.map((reg) => (
                         <TableRow key={reg.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="py-1.5 text-xs font-medium">
                             {reg.student.user.prenom} {reg.student.user.nom}
                           </TableCell>
-                          <TableCell className="font-mono text-xs">
+                          <TableCell className="py-1.5 font-mono text-xs">
                             {reg.student.numeroEtudiant}
                           </TableCell>
-                          <TableCell className="text-[13px] text-muted-foreground">
+                          <TableCell className="py-1.5 text-xs text-muted-foreground">
                             {reg.student.ufr.code} — {reg.student.filiere.nom}
                           </TableCell>
-                          <TableCell className="font-mono text-xs">
+                          <TableCell className="py-1.5 font-mono text-xs">
                             {reg.payments[0]?.receiptNumber ?? "—"}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant="secondary" className="rounded-full text-xs">
+                          <TableCell className="py-1.5 text-right">
+                            <Badge variant="secondary" className="rounded-full px-2 py-0 text-[11px]">
                               {REGISTRATION_STATUS_LABELS_FR[reg.statut as RegistrationStatus]}
                             </Badge>
                           </TableCell>
@@ -154,31 +158,28 @@ export default async function AdminDashboardPage() {
 
         {/* Gestion des rôles */}
         <Card className="min-w-0 rounded-xl border border-border bg-surface py-0 shadow-xs">
-          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-3">
-            <CardTitle className="text-base font-semibold">
+          <CardHeader className="px-3.5 py-2.5 sm:px-4">
+            <CardTitle className="text-sm font-semibold sm:text-base">
               Gestion des rôles utilisateurs
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
-            <div className="space-y-2.5 md:hidden">
+          <CardContent className="px-3.5 pt-0 pb-2.5 sm:px-4 sm:pb-3">
+            <div className="divide-y divide-border/70 md:hidden">
               {metrics.users.map((u) => (
-                <div
-                  key={u.id}
-                  className="space-y-2.5 rounded-xl border border-border bg-background/50 p-3.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
+                <div key={u.id} className="space-y-1.5 py-2">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">
+                      <p className="truncate text-xs font-semibold text-foreground">
                         {u.prenom} {u.nom}
                       </p>
-                      <p className="break-all text-xs text-muted-foreground">{u.email}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{u.email}</p>
                     </div>
-                    <Badge variant="secondary" className="shrink-0 rounded-full text-[11px]">
+                    <Badge variant="secondary" className="shrink-0 rounded-full px-2 py-0 text-[10px]">
                       {ROLE_LABELS_FR[u.role as Role]}
                     </Badge>
                   </div>
                   {u.id === adminUser.id ? (
-                    <p className="text-xs text-muted-foreground">Compte actuel</p>
+                    <p className="text-[11px] text-muted-foreground">Compte actuel</p>
                   ) : (
                     <UpdateUserRoleForm
                       userId={u.id}
@@ -194,27 +195,27 @@ export default async function AdminDashboardPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead>Rôle actuel</TableHead>
-                    <TableHead className="text-right">Modifier</TableHead>
+                    <TableHead className="h-8 text-xs">Nom</TableHead>
+                    <TableHead className="h-8 text-xs">E-mail</TableHead>
+                    <TableHead className="h-8 text-xs">Rôle</TableHead>
+                    <TableHead className="h-8 text-right text-xs">Modifier</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {metrics.users.map((u) => (
                     <TableRow key={u.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="py-1.5 text-xs font-medium">
                         {u.prenom} {u.nom}
                       </TableCell>
-                      <TableCell className="text-[13px] text-muted-foreground">
+                      <TableCell className="py-1.5 text-xs text-muted-foreground">
                         {u.email}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="rounded-full text-xs">
+                      <TableCell className="py-1.5">
+                        <Badge variant="secondary" className="rounded-full px-2 py-0 text-[11px]">
                           {ROLE_LABELS_FR[u.role as Role]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-1.5 text-right">
                         {u.id === adminUser.id ? (
                           <span className="text-xs text-muted-foreground">Compte actuel</span>
                         ) : (

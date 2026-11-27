@@ -83,12 +83,12 @@ export function NotificationList({ notifications: initialNotifications }: Notifi
 
   return (
     <Card className="rounded-xl border border-border bg-surface py-0 shadow-xs">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 p-4 pb-2 sm:p-5 sm:pb-3">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 px-3.5 py-2.5 sm:px-4">
         <div className="flex min-w-0 items-center gap-2">
           <Bell className="h-4 w-4 shrink-0 text-brand" />
-          <CardTitle className="text-base font-semibold">Notifications</CardTitle>
+          <CardTitle className="text-sm font-semibold sm:text-base">Notifications</CardTitle>
           {unreadCount > 0 && (
-            <Badge className="rounded-full bg-brand px-2 py-0.5 text-[11px] text-brand-foreground">
+            <Badge className="rounded-full bg-brand px-1.5 py-0 text-[11px] text-brand-foreground">
               {unreadCount}
             </Badge>
           )}
@@ -101,16 +101,16 @@ export function NotificationList({ notifications: initialNotifications }: Notifi
             size="sm"
             disabled={isPending}
             onClick={handleMarkAll}
-            className="rounded-lg text-xs"
+            className="h-7 rounded-lg px-2 text-xs"
           >
-            Tout marquer lu
+            Tout lire
           </Button>
         )}
       </CardHeader>
 
-      <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+      <CardContent className="px-3.5 pt-0 pb-2.5 sm:px-4 sm:pb-3">
         {items.length === 0 ? (
-          <p className="py-3 text-center text-[13px] text-muted-foreground">
+          <p className="py-2.5 text-center text-xs text-muted-foreground">
             Aucune notification pour le moment.
           </p>
         ) : (
@@ -124,13 +124,13 @@ export function NotificationList({ notifications: initialNotifications }: Notifi
                 <li
                   key={notif.id}
                   className={cn(
-                    "flex items-start justify-between gap-2.5 py-2.5 sm:py-3",
+                    "flex items-center justify-between gap-2 py-2",
                     !notif.lu && "font-medium"
                   )}
                 >
                   <div className="min-w-0 space-y-0.5">
-                    <p className="text-sm text-foreground">{notif.message}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[13px] leading-snug text-foreground">{notif.message}</p>
+                    <p className="text-[11px] text-muted-foreground">
                       {date.toLocaleString("fr-FR", {
                         dateStyle: "short",
                         timeStyle: "short",

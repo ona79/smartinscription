@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   REGISTRATION_STATUS_LABELS_FR,
   REGISTRATION_STATUSES,
 } from "@smartinscription/shared";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,23 +43,24 @@ export function AdminDossiersFilters({
   return (
     <>
       {/* Mobile : recherche + bouton Filtres */}
-      <div className="flex gap-2 md:hidden">
-        <form method="GET" className="flex flex-1 gap-2">
+      <div className="flex gap-1.5 md:hidden">
+        <form method="GET" className="flex flex-1 gap-1.5">
           {statut && <input type="hidden" name="statut" value={statut} />}
           {ufrId && <input type="hidden" name="ufrId" value={ufrId} />}
           {aiClass && <input type="hidden" name="aiClass" value={aiClass} />}
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute top-3.5 left-3 h-4 w-4 text-muted-foreground" />
+            <Search className="pointer-events-none absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               name="q"
               defaultValue={q ?? ""}
-              placeholder="Rechercher nom ou N°..."
-              className="pl-9"
+              placeholder="Nom ou N°..."
+              className="h-9 pl-8 text-sm"
             />
           </div>
           <Button
             type="submit"
-            className="shrink-0 rounded-lg bg-brand px-3.5 text-brand-foreground hover:bg-brand-dark"
+            size="sm"
+            className="h-9 shrink-0 rounded-lg bg-brand px-3 text-xs text-brand-foreground hover:bg-brand-dark"
           >
             OK
           </Button>
@@ -67,13 +69,14 @@ export function AdminDossiersFilters({
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() => setSheetOpen(true)}
-          className="relative shrink-0 rounded-lg px-3"
+          className="relative h-9 shrink-0 rounded-lg px-2.5"
           aria-label="Ouvrir les filtres"
         >
           <SlidersHorizontal className="h-4 w-4" />
           {activeFiltersCount > 0 && (
-            <span className="ml-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[11px] font-semibold text-brand-foreground">
+            <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-brand-foreground">
               {activeFiltersCount}
             </span>
           )}
@@ -153,15 +156,15 @@ export function AdminDossiersFilters({
         </DialogContent>
       </Dialog>
 
-      {/* Desktop : grille complète inline */}
-      <form method="GET" className="hidden gap-3 md:grid md:grid-cols-5">
-        <div className="relative md:col-span-2">
-          <Search className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+      {/* Desktop : barre compacte inline */}
+      <form method="GET" className="hidden items-center gap-2 md:flex">
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="pointer-events-none absolute top-2 left-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             name="q"
             defaultValue={q ?? ""}
             placeholder="Nom, prénom ou N° étudiant..."
-            className="pl-9"
+            className="h-8 pl-8 text-xs"
           />
         </div>
 
@@ -169,9 +172,9 @@ export function AdminDossiersFilters({
           name="statut"
           defaultValue={statut ?? ""}
           aria-label="Filtrer par statut"
-          className="h-10 rounded-lg border border-input bg-surface px-3 text-sm"
+          className="h-8 rounded-lg border border-input bg-surface px-2.5 text-xs"
         >
-          <option value="">Tous les statuts</option>
+          <option value="">Statut</option>
           {Object.values(REGISTRATION_STATUSES).map((st) => (
             <option key={st} value={st}>
               {REGISTRATION_STATUS_LABELS_FR[st]}
@@ -183,9 +186,9 @@ export function AdminDossiersFilters({
           name="ufrId"
           defaultValue={ufrId ?? ""}
           aria-label="Filtrer par UFR"
-          className="h-10 rounded-lg border border-input bg-surface px-3 text-sm"
+          className="h-8 max-w-[180px] rounded-lg border border-input bg-surface px-2.5 text-xs"
         >
-          <option value="">Toutes les UFR</option>
+          <option value="">UFR</option>
           {ufrs.map((ufr) => (
             <option key={ufr.id} value={ufr.id}>
               {ufr.code} — {ufr.nom}
@@ -193,25 +196,36 @@ export function AdminDossiersFilters({
           ))}
         </select>
 
-        <div className="flex gap-2">
-          <select
-            name="aiClass"
-            defaultValue={aiClass ?? ""}
-            aria-label="Filtrer par classe IA"
-            className="h-10 flex-1 rounded-lg border border-input bg-surface px-2.5 text-sm"
+        <select
+          name="aiClass"
+          defaultValue={aiClass ?? ""}
+          aria-label="Filtrer par classe IA"
+          className="h-8 rounded-lg border border-input bg-surface px-2.5 text-xs"
+        >
+          <option value="">Classe IA</option>
+          <option value="CONFORME">CONFORME</option>
+          <option value="A_VERIFIER">A_VERIFIER</option>
+          <option value="SUSPECT">SUSPECT</option>
+        </select>
+
+        <Button
+          type="submit"
+          size="sm"
+          className="h-8 shrink-0 rounded-lg bg-brand px-3 text-xs font-medium text-brand-foreground hover:bg-brand-dark"
+        >
+          Filtrer
+        </Button>
+
+        {(q || activeFiltersCount > 0) && (
+          <Link
+            href="/admin/dossiers"
+            aria-label="Réinitialiser les filtres"
+            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           >
-            <option value="">Classe IA</option>
-            <option value="CONFORME">CONFORME</option>
-            <option value="A_VERIFIER">A_VERIFIER</option>
-            <option value="SUSPECT">SUSPECT</option>
-          </select>
-          <Button
-            type="submit"
-            className="shrink-0 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-dark"
-          >
-            Filtrer
-          </Button>
-        </div>
+            <X className="h-3.5 w-3.5" />
+            Réinit.
+          </Link>
+        )}
       </form>
     </>
   );

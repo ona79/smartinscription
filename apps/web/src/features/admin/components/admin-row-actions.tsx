@@ -17,14 +17,14 @@ export function ResolveFraudAlertButton({ alertId }: { alertId: string }) {
         size="sm"
         variant="outline"
         disabled={isPending}
-        className="w-full rounded-lg text-[13px] sm:w-auto"
+        className="h-7 w-full rounded-lg px-2.5 text-xs sm:w-auto"
       >
         {isPending ? (
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
         ) : (
-          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+          <CheckCircle2 className="mr-1.5 h-3 w-3" />
         )}
-        Marquer comme résolue
+        Résoudre
       </Button>
     </form>
   );
@@ -44,7 +44,7 @@ export function UpdateUserRoleForm({
   return (
     <form
       action={formAction}
-      className="flex w-full items-center gap-2 sm:inline-flex sm:w-auto"
+      className="flex w-full items-center gap-1.5 sm:inline-flex sm:w-auto"
     >
       <input type="hidden" name="userId" value={userId} />
       <select
@@ -52,7 +52,7 @@ export function UpdateUserRoleForm({
         defaultValue={defaultRole}
         disabled={isPending}
         aria-label={`Rôle pour ${email}`}
-        className="h-11 flex-1 rounded-lg border border-input bg-surface px-2.5 text-base sm:h-9 sm:flex-none sm:text-[13px]"
+        className="h-8 flex-1 rounded-lg border border-input bg-surface px-2 text-xs sm:flex-none"
       >
         <option value={ROLES.STUDENT}>Étudiant</option>
         <option value={ROLES.AGENT}>Agent</option>
@@ -63,10 +63,10 @@ export function UpdateUserRoleForm({
         size="sm"
         variant="outline"
         disabled={isPending}
-        className="shrink-0 rounded-lg text-[13px]"
+        className="h-8 shrink-0 rounded-lg px-2.5 text-xs"
       >
-        {isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-        Appliquer
+        {isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+        OK
       </Button>
     </form>
   );
